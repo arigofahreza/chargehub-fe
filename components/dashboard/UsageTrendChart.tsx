@@ -51,7 +51,7 @@ export function UsageTrendChart() {
               border: "1px solid #C3C6D7",
               fontSize: 12,
             }}
-            formatter={(v: number) => [`${v} km`, "Distance"]}
+            formatter={(v) => [`${v} km`, "Distance"]}
           />
           <Line
             type="monotone"

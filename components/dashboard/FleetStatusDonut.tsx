@@ -44,7 +44,7 @@ export function FleetStatusDonut() {
               <Cell key={i} fill={entry.color} />
             ))}
           </Pie>
-          <Tooltip formatter={(v: number) => [`${v}%`, ""]} />
+          <Tooltip formatter={(v) => [`${v}%`, ""]} />
           <Legend
             iconSize={8}
             iconType="circle"
