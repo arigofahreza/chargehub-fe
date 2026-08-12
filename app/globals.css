@@ -71,6 +71,31 @@
   --shadow-float: 0 10px 30px rgba(11,28,48,0.15);
   --shadow-btn: 0 8px 16px -4px rgba(0,74,198,0.35);
   --shadow-logo: 0 4px 12px rgba(11,28,48,0.15);
+
+  /* Shugar calendar design tokens */
+  --color-gray-1000: var(--ds-gray-1000);
+  --color-gray-900: var(--ds-gray-900);
+  --color-gray-700: var(--ds-gray-700);
+  --color-gray-100: var(--ds-gray-100);
+  --color-background-100: var(--ds-background-100);
+  --color-background-200: var(--ds-background-200);
+  --color-accents-2: var(--accents-2);
+  --color-blue-900: var(--ds-blue-900);
+  --color-red-900: var(--ds-red-900);
+  --color-gray-alpha-300: var(--ds-gray-alpha-300);
+  --color-gray-alpha-400: var(--ds-gray-alpha-400);
+  --color-gray-alpha-500: var(--ds-gray-alpha-500);
+  --color-gray-alpha-600: var(--ds-gray-alpha-600);
+  --shadow-menu: var(--ds-shadow-menu);
+  --shadow-border: var(--ds-shadow-border);
+  --shadow-border-small: var(--ds-shadow-border-small);
+  --shadow-border-medium: var(--ds-shadow-border-medium);
+  --shadow-focus-ring: var(--ds-focus-ring);
+  --shadow-focus-input: var(--ds-input-ring);
+  --shadow-focus-calendar-date: var(--ds-focus-calendar-date-ring);
+  --shadow-tooltip: var(--ds-shadow-tooltip);
+  --shadow-modal: var(--ds-shadow-modal);
+  --shadow-fullscreen: var(--ds-shadow-fullscreen);
 }
 
 :root {
@@ -98,6 +123,34 @@
   --chart-4: #BA1A1A;
   --chart-5: #737686;
   --radius: 0.75rem;
+
+  /* Shugar design system values */
+  --ds-gray-1000: hsla(0, 0%, 9%, 1);
+  --ds-gray-900: hsla(0, 0%, 40%, 1);
+  --ds-gray-700: hsla(0, 0%, 56%, 1);
+  --ds-gray-100: hsla(0, 0%, 95%, 1);
+  --ds-background-100: hsla(0, 0%, 100%, 1);
+  --ds-background-200: hsla(0, 0%, 98%, 1);
+  --accents-2: #eaeaea;
+  --ds-blue-900: oklch(53.18% 0.2399 256.99);
+  --ds-red-900: oklch(54.99% 0.232 25.29);
+  --ds-blue-700: oklch(57.61% 0.2508 258.23);
+  --ds-gray-alpha-300: hsla(0, 0%, 0%, 0.1);
+  --ds-gray-alpha-400: hsla(0, 0%, 0%, 0.08);
+  --ds-gray-alpha-500: hsla(0, 0%, 0%, 0.21);
+  --ds-gray-alpha-600: hsla(0, 0%, 0%, 0.34);
+  --ds-focus-calendar-date-ring: 0 0 0 1px var(--ds-background-100), 0 0 0 2.5px var(--ds-gray-1000);
+  --ds-focus-ring: 0 0 0 2px var(--ds-background-100), 0 0 0 4px var(--ds-blue-700);
+  --ds-shadow-border: 0 0 0 1px rgba(0,0,0,0.08);
+  --ds-shadow-menu: var(--ds-shadow-border), 0px 1px 1px rgba(0,0,0,0.02), 0px 4px 8px -4px rgba(0,0,0,0.04), 0px 16px 24px -8px rgba(0,0,0,0.06);
+  --ds-shadow-small: 0px 2px 2px rgba(0,0,0,0.04);
+  --ds-shadow-border-small: var(--ds-shadow-border), var(--ds-shadow-small);
+  --ds-shadow-border-medium: var(--ds-shadow-border), 0px 2px 4px rgba(0,0,0,0.06), 0px 6px 12px rgba(0,0,0,0.05);
+  --ds-input-ring: 0 0 0 1px var(--ds-gray-alpha-600), 0 0 0 4px rgba(0,0,0,.16);
+  --ds-shadow-tooltip: var(--ds-shadow-border), 0px 1px 2px rgba(0,0,0,0.04), 0px 4px 6px rgba(0,0,0,0.04);
+  --ds-shadow-modal: var(--ds-shadow-border), 0px 4px 8px rgba(0,0,0,0.04), 0px 16px 32px rgba(0,0,0,0.08);
+  --ds-shadow-fullscreen: 0px 8px 24px rgba(0,0,0,0.12);
+
   --sidebar: #F8F9FF;
   --sidebar-foreground: #0B1C30;
   --sidebar-primary: #004AC6;
@@ -122,6 +175,18 @@
   }
 }
 
+/* Wave loader animation */
+@keyframes loading-ui-wave {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.6); }
+}
+
+/* Shugar Spinner animation */
+@keyframes fade-spin {
+  0% { opacity: 1; }
+  100% { opacity: 0.15; }
+}
+
 /* WhatsApp typing animation */
 @keyframes typing-bounce {
   0%, 80%, 100% { transform: scale(0.8); opacity: 0.4; }
@@ -132,3 +197,42 @@
 }
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.mobile-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 28, 48, 0.45);
+  z-index: 60;
+}
+
+.mobile-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #fff;
+  z-index: 70;
+  border-radius: 20px 20px 0 0;
+  padding: 8px 20px 28px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: slideUp 0.25s ease;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.15);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.mobile-sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 9999px;
+  background: #C3C6D7;
+  margin: 8px auto 0 auto;
+  flex-shrink: 0;
+}

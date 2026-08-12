@@ -41,6 +41,7 @@ export interface NotificationTemplate {
   employeeCount: number;
   phoneCount: number;
   lastSent: string;
+  category: string;
 }
 
 export interface ActivityLog {
@@ -63,4 +64,38 @@ export interface VehicleFilter {
 export interface ActivityFilter {
   serviceType?: string;
   vehicleId?: string;
+}
+
+export interface DashboardFilter {
+  vehicleId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface FleetStatusData {
+  available: number;
+  inUse: number;
+  service: number;
+  total: number;
+}
+
+export interface UsageTrendPoint {
+  date: string;
+  km: number;
+}
+
+export interface TopEnergyItem {
+  vehicleId: string;
+  vehicleName: string;
+  totalKwh: number;
+  pct: number;
+}
+
+export interface DashboardStats {
+  totalKm: number;
+  totalKwh: number;
+  activityCount: number;
+  availableCount: number;
+  avgBatteryPct: number;
+  totalVehicles: number;
 }

@@ -1,38 +1,52 @@
 import { Vehicle, VehicleFilter } from "../types";
-import { mockVehicles } from "../mock-data/vehicles";
+import { api } from "../api-client";
+import { getToken } from "../auth";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export async function getVehicles(filter?: VehicleFilter): Promise<Vehicle[]> {
-  let results = [...mockVehicles];
-  if (filter?.search) {
-    const q = filter.search.toLowerCase();
-    results = results.filter(
-      (v) =>
-        v.name.toLowerCase().includes(q) ||
-        v.fleetId.toLowerCase().includes(q)
-    );
-  }
-  if (filter?.status && filter.status !== "all") {
-    results = results.filter((v) => v.status === filter.status);
-  }
-  return results;
+  const params = new URLSearchParams();
+  if (filter?.search) params.set("search", filter.search);
+  if (filter?.status && filter.status !== "all") params.set("status", filter.status);
+  const qs = params.toString();
+  return api.get<Vehicle[]>(`/api/v1/vehicles${qs ? `?${qs}` : ""}`);
 }
 
 export async function getVehicleById(id: string): Promise<Vehicle | null> {
-  return mockVehicles.find((v) => v.id === id) ?? null;
+  try {
+    return await api.get<Vehicle>(`/api/v1/vehicles/${id}`);
+  } catch {
+    return null;
+  }
 }
 
 export async function createVehicle(data: Omit<Vehicle, "id">): Promise<Vehicle> {
-  const newVehicle: Vehicle = { ...data, id: String(Date.now()) };
-  mockVehicles.push(newVehicle);
-  return newVehicle;
+  return api.post<Vehicle>("/api/v1/vehicles", data);
 }
 
 export async function updateVehicle(
   id: string,
   data: Partial<Vehicle>
 ): Promise<Vehicle | null> {
-  const idx = mockVehicles.findIndex((v) => v.id === id);
-  if (idx === -1) return null;
-  mockVehicles[idx] = { ...mockVehicles[idx], ...data };
-  return mockVehicles[idx];
+  try {
+    return await api.patch<Vehicle>(`/api/v1/vehicles/${id}`, data);
+  } catch {
+    return null;
+  }
+}
+
+export async function uploadVehiclePhoto(vehicleId: string, file: File): Promise<Vehicle> {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${API_BASE}/api/v1/vehicles/${vehicleId}/photo`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Photo upload failed ${res.status}: ${text}`);
+  }
+  return res.json() as Promise<Vehicle>;
 }

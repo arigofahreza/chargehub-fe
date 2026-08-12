@@ -1,27 +1,28 @@
 import { Employee, EmployeeStatus } from "../types";
-import { mockEmployees } from "../mock-data/employees";
+import { api } from "../api-client";
 
 export async function getEmployees(
   statusFilter?: EmployeeStatus | "all"
 ): Promise<Employee[]> {
-  if (!statusFilter || statusFilter === "all") return [...mockEmployees];
-  return mockEmployees.filter((e) => e.status === statusFilter);
+  const params = new URLSearchParams();
+  if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
+  const qs = params.toString();
+  return api.get<Employee[]>(`/api/v1/employees${qs ? `?${qs}` : ""}`);
 }
 
 export async function createEmployee(
   data: Omit<Employee, "id">
 ): Promise<Employee> {
-  const newEmp: Employee = { ...data, id: String(Date.now()) };
-  mockEmployees.push(newEmp);
-  return newEmp;
+  return api.post<Employee>("/api/v1/employees", data);
 }
 
 export async function updateEmployee(
   id: string,
   data: Partial<Employee>
 ): Promise<Employee | null> {
-  const idx = mockEmployees.findIndex((e) => e.id === id);
-  if (idx === -1) return null;
-  mockEmployees[idx] = { ...mockEmployees[idx], ...data };
-  return mockEmployees[idx];
+  try {
+    return await api.patch<Employee>(`/api/v1/employees/${id}`, data);
+  } catch {
+    return null;
+  }
 }

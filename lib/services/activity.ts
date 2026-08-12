@@ -1,33 +1,33 @@
 import { ActivityLog, ActivityFilter } from "../types";
-import { mockActivityLogs } from "../mock-data/activity";
+import { api } from "../api-client";
 
 export async function getActivityLogs(
   filter?: ActivityFilter
 ): Promise<ActivityLog[]> {
-  let results = [...mockActivityLogs];
+  const params = new URLSearchParams();
+  if (filter?.vehicleId && filter.vehicleId !== "all")
+    params.set("vehicleId", filter.vehicleId);
+  const qs = params.toString();
+  const logs = await api.get<ActivityLog[]>(`/api/v1/activities${qs ? `?${qs}` : ""}`);
   if (filter?.serviceType && filter.serviceType !== "all") {
-    results = results.filter((a) => a.serviceType === filter.serviceType);
+    return logs.filter((a) => a.serviceType === filter.serviceType);
   }
-  if (filter?.vehicleId && filter.vehicleId !== "all") {
-    results = results.filter((a) => a.vehicleId === filter.vehicleId);
-  }
-  return results;
+  return logs;
 }
 
 export async function createActivityLog(
   data: Omit<ActivityLog, "id">
 ): Promise<ActivityLog> {
-  const log: ActivityLog = { ...data, id: String(Date.now()) };
-  mockActivityLogs.push(log);
-  return log;
+  return api.post<ActivityLog>("/api/v1/activities", data);
 }
 
 export async function updateActivityLog(
   id: string,
   data: Partial<ActivityLog>
 ): Promise<ActivityLog | null> {
-  const idx = mockActivityLogs.findIndex((a) => a.id === id);
-  if (idx === -1) return null;
-  mockActivityLogs[idx] = { ...mockActivityLogs[idx], ...data };
-  return mockActivityLogs[idx];
+  try {
+    return await api.patch<ActivityLog>(`/api/v1/activities/${id}`, data);
+  } catch {
+    return null;
+  }
 }

@@ -9,16 +9,27 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/useAuthStore";
 
-export function ProfilePopover() {
+interface ProfilePopoverProps {
+  avatarOnly?: boolean;
+}
+
+export function ProfilePopover({ avatarOnly }: ProfilePopoverProps) {
   const router = useRouter();
+  const logout = useAuthStore((s) => s.logout);
+
+  function handleLogout() {
+    logout();
+    router.push("/login");
+  }
 
   return (
     <Popover>
       <PopoverTrigger
         className="flex items-center gap-2 rounded-full px-2 py-1 hover:bg-[#F8F9FF] transition-colors border-0 bg-transparent cursor-pointer"
       >
-        <Avatar className="h-8 w-8">
+        <Avatar className="h-8 w-8" style={{ border: "2px solid #2563EB" }}>
           <AvatarImage src="/assets/avatar-user.jpg" alt="User" />
           <AvatarFallback
             className="text-white text-xs font-semibold"
@@ -27,9 +38,11 @@ export function ProfilePopover() {
             JW
           </AvatarFallback>
         </Avatar>
-        <span className="text-sm font-semibold" style={{ color: "var(--color-ink)" }}>
-          James Wilson
-        </span>
+        {!avatarOnly && (
+          <span className="text-sm font-semibold" style={{ color: "var(--color-ink)" }}>
+            James Wilson
+          </span>
+        )}
       </PopoverTrigger>
       <PopoverContent
         align="end"
@@ -53,7 +66,7 @@ export function ProfilePopover() {
           size="sm"
           className="w-full justify-start text-xs"
           style={{ color: "var(--color-error)" }}
-          onClick={() => router.push("/login")}
+          onClick={handleLogout}
         >
           <LogOut className="mr-2 h-4 w-4" />
           Logout

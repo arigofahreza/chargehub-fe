@@ -1,59 +1,57 @@
-const vehicles = [
-  { name: "EV-002 BYD Atto 3", percent: 94 },
-  { name: "EV-006 MG4 Electric", percent: 87 },
-  { name: "EV-004 Hyundai IONIQ 5", percent: 76 },
-  { name: "EV-001 Tesla Model Y", percent: 65 },
-  { name: "EV-005 Chery Omoda E5", percent: 54 },
-];
+import { TopEnergyItem } from "@/lib/types";
 
-export function TopEnergyList() {
+interface Props {
+  items: TopEnergyItem[];
+}
+
+export function TopEnergyList({ items }: Props) {
   return (
     <div
-      className="bg-white p-4"
-      style={{ borderRadius: "var(--radius-card)", boxShadow: "var(--shadow-card)" }}
+      style={{
+        background: "#fff",
+        border: "1px solid #C3C6D7",
+        borderRadius: 16,
+        padding: 20,
+        display: "flex",
+        flexDirection: "column",
+        gap: 14,
+        boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
+      }}
     >
-      <h3
-        className="text-sm font-bold mb-4"
-        style={{ color: "var(--color-ink)" }}
-      >
+      <span style={{ fontWeight: 600, fontSize: 15, color: "#0B1C30" }}>
         Top Energy Consumption
-      </h3>
-      <div className="space-y-3">
-        {vehicles.map((v) => (
-          <div key={v.name}>
-            <div className="flex justify-between text-xs mb-1">
-              <span
-                className="font-medium truncate"
-                style={{ color: "var(--color-body)" }}
-              >
-                {v.name}
-              </span>
-              <span
-                className="ml-2 shrink-0"
-                style={{ color: "var(--color-muted-text)" }}
-              >
-                {v.percent}%
-              </span>
-            </div>
-            <div
-              className="h-1.5 overflow-hidden"
-              style={{
-                backgroundColor: "var(--color-border-ch)",
-                borderRadius: "9999px",
-              }}
-            >
+      </span>
+      {items.length === 0 ? (
+        <span style={{ fontSize: 12, color: "#9CA3AF" }}>No data for selected period</span>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {items.map((v) => (
+            <div key={v.vehicleId} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 12, color: "#434655" }}>{v.vehicleName}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#0B1C30" }}>{v.totalKwh} kWh</span>
+              </div>
               <div
-                className="h-full"
                 style={{
-                  width: `${v.percent}%`,
-                  backgroundColor: "var(--color-brand-accent)",
-                  borderRadius: "9999px",
+                  height: 8,
+                  borderRadius: 9999,
+                  background: "#EFF4FF",
+                  overflow: "hidden",
                 }}
-              />
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    borderRadius: 9999,
+                    background: "#2563EB",
+                    width: `${v.pct}%`,
+                  }}
+                />
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

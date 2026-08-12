@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import {
@@ -9,30 +9,32 @@ import {
   Users,
   Bell,
   ClipboardList,
-  LogOut,
 } from "lucide-react";
+import { useAuthStore } from "@/stores/useAuthStore";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/vehicles", label: "Vehicles", icon: Car },
-  { href: "/employees", label: "Employees", icon: Users },
-  { href: "/notifications", label: "Notifications", icon: Bell },
-  { href: "/activity", label: "Activity", icon: ClipboardList },
+const allNavItems = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, adminOnly: false },
+  { href: "/vehicles", label: "Vehicles", icon: Car, adminOnly: false },
+  { href: "/employees", label: "Employees", icon: Users, adminOnly: true },
+  { href: "/notifications", label: "Notifications", icon: Bell, adminOnly: true },
+  { href: "/activity", label: "Activity", icon: ClipboardList, adminOnly: false },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role === "admin";
+  const navItems = allNavItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <aside
-      className="fixed left-0 top-0 h-screen w-60 bg-white flex flex-col z-30"
+      className="hidden md:flex fixed left-0 top-0 h-screen w-60 bg-white flex-col z-30"
       style={{ borderRight: "1px solid var(--color-border-ch)" }}
     >
       {/* Logo */}
       <div
-        className="h-16 flex items-center px-5"
-        style={{ borderBottom: "1px solid var(--color-border-ch)" }}
+        className="flex items-center px-5"
+        style={{ height: 72, flexShrink: 0, borderBottom: "1px solid var(--color-border-ch)" }}
       >
         <Image
           src="/assets/logo-chargehub.png"
@@ -78,23 +80,6 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Logout */}
-      <div
-        className="px-3 pb-4 pt-3"
-        style={{ borderTop: "1px solid var(--color-border-ch)" }}
-      >
-        <button
-          onClick={() => router.push("/login")}
-          className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium w-full transition-colors hover:bg-[#F8F9FF]"
-          style={{
-            borderRadius: "var(--radius-input)",
-            color: "var(--color-muted-text)",
-          }}
-        >
-          <LogOut className="h-5 w-5" />
-          Logout
-        </button>
-      </div>
     </aside>
   );
 }

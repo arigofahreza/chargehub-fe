@@ -1,57 +1,54 @@
-import { TrendingUp, TrendingDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-
 interface StatCardProps {
   label: string;
   value: string;
-  delta?: string;
-  deltaType?: "up" | "down" | "neutral";
-  sublabel?: string;
+  badge?: string;
+  badgeBg?: string;
+  badgeColor?: string;
+  icon: React.ReactNode;
 }
 
-export function StatCard({ label, value, delta, deltaType, sublabel }: StatCardProps) {
+export function StatCard({ label, value, badge, badgeBg, badgeColor, icon }: StatCardProps) {
   return (
     <div
-      className="bg-white flex flex-col gap-1 p-4"
       style={{
-        borderRadius: "var(--radius-card)",
-        boxShadow: "var(--shadow-card)",
+        background: "#fff",
+        border: "1px solid #C3C6D7",
+        borderRadius: 14,
+        padding: 16,
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
       }}
     >
-      <p
-        className="text-xs font-medium uppercase tracking-wide"
-        style={{ color: "var(--color-muted-text)" }}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        {icon}
+        {badge && (
+          <span
+            style={{
+              fontSize: 8,
+              fontWeight: 700,
+              color: badgeColor ?? "#00714D",
+              background: badgeBg ?? "rgba(0,113,77,0.1)",
+              borderRadius: 4,
+              padding: "2px 7px",
+            }}
+          >
+            {badge}
+          </span>
+        )}
+      </div>
+      <span style={{ fontSize: 22, fontWeight: 700, color: "#0B1C30" }}>{value}</span>
+      <span
+        style={{
+          fontSize: 9,
+          color: "#737686",
+          letterSpacing: "0.3px",
+          textTransform: "uppercase",
+        }}
       >
         {label}
-      </p>
-      <p
-        className="text-2xl font-extrabold tracking-tight"
-        style={{ color: "var(--color-ink)", letterSpacing: "-0.4px" }}
-      >
-        {value}
-      </p>
-      {delta && (
-        <div
-          className={cn("flex items-center gap-1 text-xs font-semibold")}
-          style={{
-            color:
-              deltaType === "up"
-                ? "var(--color-success)"
-                : deltaType === "down"
-                ? "var(--color-error)"
-                : "var(--color-muted-text)",
-          }}
-        >
-          {deltaType === "up" && <TrendingUp className="h-3 w-3" />}
-          {deltaType === "down" && <TrendingDown className="h-3 w-3" />}
-          {delta}
-        </div>
-      )}
-      {sublabel && (
-        <p className="text-xs" style={{ color: "var(--color-muted-text)" }}>
-          {sublabel}
-        </p>
-      )}
+      </span>
     </div>
   );
 }
