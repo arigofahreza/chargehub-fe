@@ -2,8 +2,7 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SelectDropdown } from "@/components/ui/select-dropdown";
-import { Calendar, RangeValue } from "@/components/ui/calendar-range";
-import { startOfDay, endOfDay } from "date-fns";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { ActivityLog, ActivityStatus } from "@/lib/types";
 
 interface Props {
@@ -80,27 +79,6 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
     }));
   }
 
-  const calendarDate: RangeValue | null = form.dateTime
-    ? (() => {
-        const d = new Date(form.dateTime);
-        return { start: startOfDay(d), end: endOfDay(d) };
-      })()
-    : null;
-
-  function handleDateChange(v: RangeValue | null) {
-    if (!v) { setForm((f) => ({ ...f, dateTime: "" })); return; }
-    const d = v.start;
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    const timeStr = form.dateTime?.slice(11, 16) ?? "00:00";
-    setForm((f) => ({ ...f, dateTime: `${dateStr}T${timeStr}` }));
-  }
-
-  function handleTimeChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const d = calendarDate?.start ?? new Date();
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    setForm((f) => ({ ...f, dateTime: `${dateStr}T${e.target.value}` }));
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -155,22 +133,10 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         <label style={labelStyle}>Date &amp; Time</label>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <Calendar
-            value={calendarDate}
-            onChange={handleDateChange}
-            singleDateMode
-            fullWidth
-            showTimeInput={false}
-            showTimezone={false}
-          />
-          <input
-            type="time"
-            value={form.dateTime?.slice(11, 16) ?? ""}
-            onChange={handleTimeChange}
-            style={{ ...inputStyle, height: 38 }}
-          />
-        </div>
+        <DateTimePicker
+          value={form.dateTime ? new Date(form.dateTime) : null}
+          onChange={(date) => setForm((f) => ({ ...f, dateTime: date?.toISOString() ?? "" }))}
+        />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         <label style={labelStyle}>Vehicle Assignment</label>
@@ -271,21 +237,10 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 <label style={labelStyle}>Date &amp; Time</label>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <Calendar
-                    value={calendarDate}
-                    onChange={handleDateChange}
-                    fullWidth
-                    showTimeInput={false}
-                    showTimezone={false}
-                  />
-                  <input
-                    type="time"
-                    value={form.dateTime?.slice(11, 16) ?? ""}
-                    onChange={handleTimeChange}
-                    style={{ ...inputStyle, height: 38 }}
-                  />
-                </div>
+                <DateTimePicker
+                  value={form.dateTime ? new Date(form.dateTime) : null}
+                  onChange={(date) => setForm((f) => ({ ...f, dateTime: date?.toISOString() ?? "" }))}
+                />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 <label style={labelStyle}>Vehicle Assignment</label>

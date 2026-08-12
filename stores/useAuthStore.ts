@@ -1,5 +1,6 @@
 "use client";
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { setToken, removeToken } from "@/lib/auth";
 
 interface AuthUser {
@@ -20,33 +21,41 @@ interface AuthStore {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-export const useAuthStore = create<AuthStore>((set) => ({
-  user: null,
-  isLoading: false,
-  error: null,
+export const useAuthStore = create<AuthStore>()(
+  persist(
+    (set) => ({
+      user: null,
+      isLoading: false,
+      error: null,
 
-  login: async (email, password) => {
-    set({ isLoading: true, error: null });
-    try {
-      const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.detail ?? "Login failed");
-      }
-      const data = await res.json();
-      setToken(data.accessToken);
-      set({ user: data.user, isLoading: false, error: null });
-    } catch (err) {
-      set({ isLoading: false, error: (err as Error).message });
-    }
-  },
+      login: async (email, password) => {
+        set({ isLoading: true, error: null });
+        try {
+          const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.detail ?? "Login failed");
+          }
+          const data = await res.json();
+          setToken(data.accessToken);
+          set({ user: data.user, isLoading: false, error: null });
+        } catch (err) {
+          set({ isLoading: false, error: (err as Error).message });
+        }
+      },
 
-  logout: () => {
-    removeToken();
-    set({ user: null, error: null });
-  },
-}));
+      logout: () => {
+        removeToken();
+        set({ user: null, error: null });
+      },
+    }),
+    {
+      name: "ch_auth",
+      partialize: (state) => ({ user: state.user }),
+    },
+  ),
+);
