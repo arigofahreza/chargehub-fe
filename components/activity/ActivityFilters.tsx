@@ -10,12 +10,12 @@ const SERVICE_TYPES = ["all", "Charging", "Maintenance", "Inspection", "Tire Rot
 const selectStyle: React.CSSProperties = {
   height: 38,
   borderRadius: 8,
-  background: "#F8F9FF",
+  background: "#EDEDED",
   border: "1px solid rgba(195,198,215,0.3)",
   padding: "0 10px",
   fontSize: 13,
   fontFamily: "inherit",
-  color: "#0B1C30",
+  color: "#171717",
   outline: "none",
 };
 
@@ -96,7 +96,7 @@ export function ActivityFilters({ vehicleOptions }: Props) {
           style={{
             background: "none",
             border: "none",
-            color: "#004AC6",
+            color: "#DA0037",
             fontWeight: 700,
             fontSize: 13,
             fontFamily: "inherit",

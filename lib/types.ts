@@ -1,4 +1,4 @@
-export type VehicleStatus = "available" | "in-use" | "service";
+export type VehicleStatus = "idle" | "working" | "charging";
 export type EmployeeStatus = "active" | "on-leave" | "inactive";
 export type TemplateStatus = "active" | "inactive";
 export type ActivityStatus = "completed" | "in-progress" | "pending";
@@ -9,23 +9,20 @@ export interface Vehicle {
   fleetId: string;
   make: string;
   model: string;
-  year: number;
   vin: string;
   batteryCapacity: number;
-  maxRange: number;
-  assignedDriver: string;
   status: VehicleStatus;
   batteryPercent: number;
   photoUrl: string;
-  temperature: number;
-  voltage: number;
-  range: number;
+  operatingTime: number;
+  degradationRatePct: number;
+  vehicleType: string;
 }
 
 export interface Employee {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   jobTitle: string;
   phone: string;
   status: EmployeeStatus;
@@ -42,6 +39,7 @@ export interface NotificationTemplate {
   phoneCount: number;
   lastSent: string;
   category: string;
+  recipientIds?: string[];
 }
 
 export interface ActivityLog {
@@ -54,6 +52,8 @@ export interface ActivityLog {
   driver: string;
   status: ActivityStatus;
   createdBy: string;
+  durationMinutes?: number;
+  energyKwh?: number;
 }
 
 export interface VehicleFilter {
@@ -98,4 +98,17 @@ export interface DashboardStats {
   availableCount: number;
   avgBatteryPct: number;
   totalVehicles: number;
+}
+
+export interface BatteryHourlyData {
+  vehicles: string[];
+  data: Array<{ hour: number; [vehicle: string]: number }>;
+}
+
+export interface AvgKwhItem {
+  vehicleId: string;
+  vehicleName: string;
+  avgKwh: number;
+  estimatedCost: number;
+  sessionCount: number;
 }

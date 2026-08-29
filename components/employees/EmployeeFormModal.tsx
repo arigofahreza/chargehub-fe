@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { AnimatePresence, motion } from "framer-motion";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SelectDropdown } from "@/components/ui/select-dropdown";
 import { Employee } from "@/lib/types";
+import { getJobTitles } from "@/lib/services/employees";
+import { sheetVariants, sheetOverlayVariants } from "@/lib/motion";
+import { X } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -18,18 +19,18 @@ interface Props {
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
-  color: "#737686",
+  color: "#777777",
 };
 
 const inputStyle: React.CSSProperties = {
   height: 44,
   borderRadius: 10,
-  background: "#EFF4FF",
-  border: "1px solid #C3C6D7",
+  background: "#fff",
+  border: "1px solid #DEDEDE",
   padding: "0 12px",
   fontSize: 14,
   fontFamily: "inherit",
-  color: "#0B1C30",
+  color: "#171717",
   outline: "none",
   width: "100%",
 };
@@ -37,9 +38,14 @@ const inputStyle: React.CSSProperties = {
 export function EmployeeFormModal({ open, onOpenChange, initial, onSubmit, mode }: Props) {
   const [isMobile, setIsMobile] = useState(false);
   const [form, setForm] = useState<Partial<Employee>>(
-    initial ?? { name: "", email: "", jobTitle: "", phone: "", status: "active", initials: "" }
+    initial ?? { name: "", jobTitle: "", phone: "", status: "active", initials: "" }
   );
   const [saving, setSaving] = useState(false);
+  const [jobTitles, setJobTitles] = useState<string[]>([]);
+
+  useEffect(() => {
+    getJobTitles().then(setJobTitles).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -69,12 +75,12 @@ export function EmployeeFormModal({ open, onOpenChange, initial, onSubmit, mode 
     }
   }
 
-  const title = mode === "add" ? "Add Employee" : "Edit Employee";
+  const title = mode === "add" ? "Tambah Karyawan" : "Edit Karyawan";
 
   const formBody = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        <label style={labelStyle}>Full Name</label>
+        <label style={labelStyle}>Nama Lengkap</label>
         <input
           value={form.name ?? ""}
           onChange={(e) => {
@@ -82,22 +88,26 @@ export function EmployeeFormModal({ open, onOpenChange, initial, onSubmit, mode 
             const initials = v.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
             setForm((f) => ({ ...f, name: v, initials }));
           }}
-          placeholder="e.g. Alex Carter"
+          placeholder="cth. Budi Santoso"
           style={inputStyle}
         />
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        <label style={labelStyle}>Email</label>
-        <input type="email" value={form.email ?? ""} onChange={(e) => set("email", e.target.value)} placeholder="name@company.com" style={inputStyle} />
-      </div>
       <div style={{ display: "flex", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
-          <label style={labelStyle}>Job Title</label>
-          <input value={form.jobTitle ?? ""} onChange={(e) => set("jobTitle", e.target.value)} placeholder="e.g. Driver" style={inputStyle} />
+          <label style={labelStyle}>Jabatan</label>
+          <SelectDropdown
+            value={form.jobTitle ?? ""}
+            onChange={(val) => set("jobTitle", val)}
+            options={[
+              { value: "", label: "Pilih jabatan..." },
+              ...jobTitles.map((t) => ({ value: t, label: t })),
+            ]}
+            style={inputStyle}
+          />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
-          <label style={labelStyle}>Phone</label>
-          <input type="tel" value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value)} placeholder="+1 555-0100" style={inputStyle} />
+          <label style={labelStyle}>Telepon</label>
+          <input type="tel" value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value)} placeholder="+62 812-0000-0000" style={inputStyle} />
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -106,9 +116,9 @@ export function EmployeeFormModal({ open, onOpenChange, initial, onSubmit, mode 
           value={form.status ?? "active"}
           onChange={(val) => set("status", val)}
           options={[
-            { value: "active", label: "Active" },
-            { value: "on-leave", label: "On Leave" },
-            { value: "inactive", label: "Inactive" },
+            { value: "active", label: "Aktif" },
+            { value: "on-leave", label: "Cuti" },
+            { value: "inactive", label: "Tidak Aktif" },
           ]}
           style={inputStyle}
         />
@@ -116,33 +126,50 @@ export function EmployeeFormModal({ open, onOpenChange, initial, onSubmit, mode 
     </div>
   );
 
-  if (!open) return null;
-
   // MOBILE: bottom sheet
   if (isMobile) {
     return (
-      <>
-        <div className="mobile-sheet-overlay" onClick={() => onOpenChange(false)} />
-        <div className="mobile-sheet">
-          <div className="mobile-sheet-handle" />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-            <span style={{ fontWeight: 700, fontSize: 17, color: "#0B1C30" }}>{title}</span>
-            <button onClick={() => onOpenChange(false)} style={{ width: 28, height: 28, border: "none", background: "none", color: "#737686", fontSize: 18, cursor: "pointer" }}>×</button>
-          </div>
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ maxHeight: "56vh", overflowY: "auto" }}>
-              {formBody}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="overlay"
+            className="mobile-sheet-overlay"
+            variants={sheetOverlayVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={() => onOpenChange(false)}
+          />
+        )}
+        {open && (
+          <motion.div
+            key="sheet"
+            className="mobile-sheet"
+            variants={sheetVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            <div className="mobile-sheet-handle" />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+              <span style={{ fontWeight: 700, fontSize: 17, color: "#171717" }}>{title}</span>
+              <button onClick={() => onOpenChange(false)} style={{ width: 28, height: 28, border: "none", background: "rgba(0,0,0,0.06)", borderRadius: 8, color: "#777777", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={15} /></button>
             </div>
-            <button
-              type="submit"
-              disabled={saving}
-              style={{ height: 48, borderRadius: 12, background: "#004AC6", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving ? 0.7 : 1 }}
-            >
-              {saving ? "Saving..." : "Save Employee"}
-            </button>
-          </form>
-        </div>
-      </>
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ maxHeight: "56vh", overflowY: "auto" }}>
+                {formBody}
+              </div>
+              <button
+                type="submit"
+                disabled={saving}
+                style={{ height: 48, borderRadius: 12, background: "#DA0037", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving ? 0.7 : 1 }}
+              >
+                {saving ? "Menyimpan..." : "Simpan Karyawan"}
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
     );
   }
 
@@ -154,17 +181,17 @@ export function EmployeeFormModal({ open, onOpenChange, initial, onSubmit, mode 
         style={{ maxWidth: 480, borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 16, boxShadow: "0 24px 60px rgba(0,0,0,0.25)" }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontWeight: 700, fontSize: 18, color: "#0B1C30" }}>{title}</span>
-          <button onClick={() => onOpenChange(false)} style={{ width: 28, height: 28, border: "none", background: "none", color: "#737686", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>×</button>
+          <span style={{ fontWeight: 700, fontSize: 18, color: "#171717" }}>{title}</span>
+          <button onClick={() => onOpenChange(false)} style={{ width: 28, height: 28, border: "none", background: "rgba(0,0,0,0.06)", borderRadius: 8, color: "#777777", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={15} /></button>
         </div>
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12, overflowY: "auto" }}>
           {formBody}
           <button
             type="submit"
             disabled={saving}
-            style={{ marginTop: 4, height: 48, borderRadius: 12, background: "#004AC6", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving ? 0.7 : 1 }}
+            style={{ marginTop: 4, height: 48, borderRadius: 12, background: "#DA0037", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving ? 0.7 : 1 }}
           >
-            {saving ? "Saving..." : "Save Employee"}
+            {saving ? "Menyimpan..." : "Simpan Karyawan"}
           </button>
         </form>
       </DialogContent>

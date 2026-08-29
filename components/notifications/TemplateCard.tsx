@@ -6,7 +6,7 @@ interface Props {
   onEdit: () => void;
 }
 
-const ICON_BG = ["#FFDAD6", "#DCE9FF", "#FFDDB8", "#EFF4FF"];
+const ICON_BG = ["#FFDAD6", "#EDEDED", "#FFDDB8", "#EDEDED"];
 let _iconIdx = 0;
 const iconBgMap: Record<string, string> = {};
 function getIconBg(id: string) {
@@ -49,11 +49,11 @@ export function TemplateCard({ template, onEdit }: Props) {
             }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M6 10C6 6.5 8.5 4 12 4C15.5 4 18 6.5 18 10V14L20 17H4L6 14V10Z" stroke="#434655" strokeWidth="2" strokeLinejoin="round" />
-              <path d="M9 20C9.5 21 10.6 21.7 12 21.7C13.4 21.7 14.5 21 15 20" stroke="#434655" strokeWidth="2" strokeLinecap="round" />
+              <path d="M6 10C6 6.5 8.5 4 12 4C15.5 4 18 6.5 18 10V14L20 17H4L6 14V10Z" stroke="#444444" strokeWidth="2" strokeLinejoin="round" />
+              <path d="M9 20C9.5 21 10.6 21.7 12 21.7C13.4 21.7 14.5 21 15 20" stroke="#444444" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </div>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#0B1C30" }}>{template.name}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "#171717" }}>{template.name}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span
@@ -63,7 +63,7 @@ export function TemplateCard({ template, onEdit }: Props) {
               padding: "3px 10px",
               borderRadius: 9999,
               background: active ? "#6CF8BB" : "#E2E8F0",
-              color: active ? "#00714D" : "#434655",
+              color: active ? "#00714D" : "#444444",
             }}
           >
             {active ? "Active" : "Draft"}
@@ -74,7 +74,7 @@ export function TemplateCard({ template, onEdit }: Props) {
               width: 26,
               height: 26,
               borderRadius: 9999,
-              border: "1px solid #C3C6D7",
+              border: "1px solid #DEDEDE",
               background: "#fff",
               display: "flex",
               alignItems: "center",
@@ -84,7 +84,7 @@ export function TemplateCard({ template, onEdit }: Props) {
             }}
           >
             <svg width="11" height="11" viewBox="0 0 18 18" fill="none">
-              <path d="M2 16L2.5 12.5L12 3L15 6L5.5 15.5L2 16Z" fill="#434655" />
+              <path d="M2 16L2.5 12.5L12 3L15 6L5.5 15.5L2 16Z" fill="#444444" />
             </svg>
           </button>
         </div>
@@ -99,16 +99,16 @@ export function TemplateCard({ template, onEdit }: Props) {
               fontWeight: 600,
               padding: "2px 8px",
               borderRadius: 9999,
-              background: "#EFF4FF",
-              color: "#004AC6",
-              border: "1px solid rgba(0,74,198,0.15)",
+              background: "#EDEDED",
+              color: "#DA0037",
+              border: "1px solid rgba(218,0,55,0.15)",
               flexShrink: 0,
             }}
           >
             {template.category}
           </span>
         )}
-        <div style={{ display: "flex", gap: 12, fontSize: 11, color: "#737686", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 12, fontSize: 11, color: "#777777", flexWrap: "wrap" }}>
           <span>{template.employeeCount} employees</span>
           <span>{template.phoneCount} numbers</span>
           <span>Sent {formatDate(template.lastSent)}</span>

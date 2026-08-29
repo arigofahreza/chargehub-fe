@@ -24,6 +24,15 @@ export async function createVehicle(data: Omit<Vehicle, "id">): Promise<Vehicle>
   return api.post<Vehicle>("/api/v1/vehicles", data);
 }
 
+export async function deleteVehicle(id: string): Promise<boolean> {
+  try {
+    await api.delete(`/api/v1/vehicles/${id}`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function updateVehicle(
   id: string,
   data: Partial<Vehicle>

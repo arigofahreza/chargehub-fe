@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import { TopBar } from "@/components/layout/TopBar";
+import { motion } from "framer-motion";
+import { fadeUpVariants, staggerContainerVariants } from "@/lib/motion";
 import { VehicleCard } from "@/components/vehicles/VehicleCard";
 import { VehicleFilters } from "@/components/vehicles/VehicleFilters";
 import { VehicleFormModal } from "@/components/vehicles/VehicleFormModal";
-import { getVehicles } from "@/lib/services/vehicles";
+import { getVehicles, deleteVehicle } from "@/lib/services/vehicles";
 import { useFilterStore } from "@/stores/useFilterStore";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Vehicle } from "@/lib/types";
@@ -18,6 +19,8 @@ export default function VehiclesPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [page, setPage] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editing, setEditing] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,21 +39,34 @@ export default function VehiclesPage() {
     setVehicles((prev) => [vehicle, ...prev]);
   }
 
+  async function handleEditVehicle(updated: Vehicle) {
+    setVehicles((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
+  }
+
+  function openEdit(vehicle: Vehicle) {
+    setEditing(vehicle);
+    setEditOpen(true);
+  }
+
+  async function handleDeleteVehicle(id: string) {
+    const ok = await deleteVehicle(id);
+    if (ok) setVehicles((prev) => prev.filter((v) => v.id !== id));
+  }
+
   return (
     <>
-      <TopBar />
       <main className="p-4 md:p-6 space-y-5">
         <div className="flex flex-col gap-3">
           <div className="flex items-start justify-between">
             <div>
-              <h1 style={{ fontWeight: 700, fontSize: 22, color: "#0B1C30", letterSpacing: "-0.4px" }}>Vehicle Management</h1>
-              <p style={{ fontSize: 13, color: "#434655" }}>Monitor fleet status &amp; assignments.</p>
+              <h1 style={{ fontWeight: 700, fontSize: 22, color: "#171717", letterSpacing: "-0.4px" }}>Vehicle Management</h1>
+              <p style={{ fontSize: 13, color: "#444444" }}>Monitor fleet status &amp; assignments.</p>
             </div>
             <button
               onClick={() => setAddOpen(true)}
               className="flex items-center gap-1.5 flex-shrink-0"
               style={{
-                background: "#004AC6",
+                background: "#DA0037",
                 border: "none",
                 borderRadius: 10,
                 color: "#fff",
@@ -62,7 +78,7 @@ export default function VehiclesPage() {
               }}
             >
               <span style={{ fontSize: 14, lineHeight: 1 }}>+</span>
-              Add
+              Add Vehicle
             </button>
           </div>
           <VehicleFilters />
@@ -70,7 +86,7 @@ export default function VehiclesPage() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
-            <Wave className="size-16 text-[#004AC6]" />
+            <Wave className="size-16 text-[#DA0037]" />
             <p className="text-sm" style={{ color: "var(--color-muted-text)" }}>Loading vehicles...</p>
           </div>
         ) : (
@@ -84,11 +100,19 @@ export default function VehiclesPage() {
                 No vehicles match your filters.
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+              <motion.div
+                key={page}
+                className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4"
+                variants={staggerContainerVariants}
+                initial="hidden"
+                animate="visible"
+              >
                 {paged.map((v) => (
-                  <VehicleCard key={v.id} vehicle={v} />
+                  <motion.div key={v.id} variants={fadeUpVariants}>
+                    <VehicleCard vehicle={v} onEdit={() => openEdit(v)} onDelete={() => handleDeleteVehicle(v.id)} />
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             )}
           </>
         )}
@@ -131,6 +155,14 @@ export default function VehiclesPage() {
         onOpenChange={setAddOpen}
         mode="add"
         onSubmit={handleAddVehicle}
+      />
+
+      <VehicleFormModal
+        open={editOpen}
+        onOpenChange={(o) => { setEditOpen(o); if (!o) setEditing(null); }}
+        mode="edit"
+        initial={editing ?? undefined}
+        onSubmit={handleEditVehicle}
       />
     </>
   );

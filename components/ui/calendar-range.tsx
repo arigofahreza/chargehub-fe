@@ -31,12 +31,12 @@ export interface RangeValue {
   end: Date;
 }
 
-// ─── Icons ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const ClockIcon = () => (
   <svg height="14" viewBox="0 0 16 16" width="14" fill="none" style={{ flexShrink: 0 }}>
-    <circle cx="8" cy="8" r="7" stroke="#737686" strokeWidth="1.5" />
-    <path d="M8 5V8.5L10 10" stroke="#737686" strokeWidth="1.5" strokeLinecap="round" />
+    <circle cx="8" cy="8" r="7" stroke="#777777" strokeWidth="1.5" />
+    <path d="M8 5V8.5L10 10" stroke="#777777" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 );
 
@@ -56,7 +56,7 @@ const ArrowBottomIcon = ({ open }: { open?: boolean }) => (
       fillRule="evenodd"
       clipRule="evenodd"
       d="M14.0607 5.5L13.5303 6.03L8.707 10.854C8.317 11.244 7.683 11.244 7.293 10.854L2.47 6.03L1.94 5.5L3 4.44L3.53 4.97L8 9.44L12.47 4.97L13 4.44L14.06 5.5Z"
-      fill="#737686"
+      fill="#777777"
     />
   </svg>
 );
@@ -67,7 +67,7 @@ const ArrowLeftIcon = () => (
       fillRule="evenodd"
       clipRule="evenodd"
       d="M10.5 14.06L9.97 13.53L5.146 8.707C4.756 8.317 4.756 7.683 5.146 7.293L9.97 2.47L10.5 1.94L11.56 3L11.03 3.53L6.56 8L11.03 12.47L11.56 13L10.5 14.06Z"
-      fill="#737686"
+      fill="#777777"
     />
   </svg>
 );
@@ -78,16 +78,16 @@ const ArrowRightIcon = () => (
       fillRule="evenodd"
       clipRule="evenodd"
       d="M5.5 1.94L6.03 2.47L10.854 7.293C11.244 7.683 11.244 8.317 10.854 8.707L6.03 13.53L5.5 14.06L4.44 13L4.97 12.47L9.44 8L4.97 3.53L4.44 3L5.5 1.94Z"
-      fill="#737686"
+      fill="#777777"
     />
   </svg>
 );
 
 const CalendarIcon = () => (
   <svg height="14" viewBox="0 0 16 16" width="14" fill="none" style={{ flexShrink: 0 }}>
-    <rect x="1.5" y="3" width="13" height="12" rx="2" stroke="#737686" strokeWidth="1.5" />
-    <path d="M1.5 6.5H14.5" stroke="#737686" strokeWidth="1.5" />
-    <path d="M5.5 1V4M10.5 1V4" stroke="#737686" strokeWidth="1.5" strokeLinecap="round" />
+    <rect x="1.5" y="3" width="13" height="12" rx="2" stroke="#777777" strokeWidth="1.5" />
+    <path d="M1.5 6.5H14.5" stroke="#777777" strokeWidth="1.5" />
+    <path d="M5.5 1V4M10.5 1V4" stroke="#777777" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 );
 
@@ -97,12 +97,12 @@ const ClearIcon = () => (
       fillRule="evenodd"
       clipRule="evenodd"
       d="M12.47 13.53L13 14.06L14.06 13L13.53 12.47L9.06 8L13.53 3.53L14.06 3L13 1.94L12.47 2.47L8 6.94L3.53 2.47L3 1.94L1.94 3L2.47 3.53L6.94 8L2.47 12.47L1.94 13L3 14.06L3.53 13.53L8 9.06L12.47 13.53Z"
-      fill="#737686"
+      fill="#777777"
     />
   </svg>
 );
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const filterPresets = (
   obj: Record<string, { text: string; start: Date; end: Date }>,
@@ -154,7 +154,7 @@ const formatDateRange = (start: Date, end: Date, timezone: string) => {
 
 const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-// ─── CalendarCombobox ─────────────────────────────────────────────────────────
+// â”€â”€â”€ CalendarCombobox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface CalendarComboboxProps {
   value: RangeValue | null;
@@ -208,7 +208,7 @@ const CalendarCombobox = ({ value, onChange, presets, presetIndex }: CalendarCom
           height: 36,
           borderRadius: 8,
           border: "1px solid rgba(195,198,215,0.5)",
-          background: "#F8F9FF",
+          background: "#EDEDED",
           padding: "0 8px 0 10px",
           cursor: "text",
         }}
@@ -225,7 +225,7 @@ const CalendarCombobox = ({ value, onChange, presets, presetIndex }: CalendarCom
             background: "transparent",
             outline: "none",
             fontSize: 12,
-            color: "#0B1C30",
+            color: "#171717",
             fontFamily: "inherit",
           }}
         />
@@ -259,20 +259,20 @@ const CalendarCombobox = ({ value, onChange, presets, presetIndex }: CalendarCom
                 style={{
                   padding: "8px 12px",
                   fontSize: 12,
-                  color: "#0B1C30",
+                  color: "#171717",
                   cursor: "pointer",
                   fontFamily: "inherit",
                   borderRadius: 6,
                   margin: "0 4px",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#EFF4FF")}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#EDEDED")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
                 {preset.text}
               </div>
             ))
           ) : (
-            <div style={{ padding: "8px 12px", fontSize: 12, color: "#737686", fontFamily: "inherit" }}>
+            <div style={{ padding: "8px 12px", fontSize: 12, color: "#777777", fontFamily: "inherit" }}>
               No matches
             </div>
           )}
@@ -282,7 +282,7 @@ const CalendarCombobox = ({ value, onChange, presets, presetIndex }: CalendarCom
   );
 };
 
-// ─── CalendarGrid ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ CalendarGrid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface CalendarGridProps {
   currentMonth: Date;
@@ -339,7 +339,7 @@ const CalendarGrid = ({
               textAlign: "center",
               fontSize: 11,
               fontWeight: 600,
-              color: "#737686",
+              color: "#777777",
               padding: "4px 0",
               fontFamily: "inherit",
             }}
@@ -372,7 +372,7 @@ const CalendarGrid = ({
                 justifyContent: "center",
                 height: 32,
                 cursor: inMonth ? "pointer" : "default",
-                background: inRange && !isSelected ? "#EFF4FF" : "transparent",
+                background: inRange && !isSelected ? "#EDEDED" : "transparent",
                 borderRadius: isSelected
                   ? "50%"
                   : rangeStart
@@ -400,13 +400,13 @@ const CalendarGrid = ({
                     ? "#fff"
                     : !inMonth
                     ? "rgba(11,28,48,0.25)"
-                    : "#0B1C30",
-                  background: isSelected ? "#004AC6" : "transparent",
+                    : "#171717",
+                  background: isSelected ? "#DA0037" : "transparent",
                   transition: "background 0.1s, color 0.1s",
                 }}
                 onMouseEnter={(e) => {
                   if (!isSelected && inMonth) {
-                    (e.currentTarget as HTMLElement).style.background = "#EFF4FF";
+                    (e.currentTarget as HTMLElement).style.background = "#EDEDED";
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -425,7 +425,7 @@ const CalendarGrid = ({
   );
 };
 
-// ─── Main Calendar ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Calendar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface CalendarProps {
   value: RangeValue | null;
@@ -549,9 +549,9 @@ export const Calendar = ({
           paddingLeft: 10,
           paddingRight: 10,
           borderRadius: 8,
-          border: isOpen ? "1px solid #004AC6" : "1px solid rgba(195,198,215,0.3)",
-          background: "#F8F9FF",
-          color: "#0B1C30",
+          border: isOpen ? "1px solid #DA0037" : "1px solid #DEDEDE",
+          background: "#fff",
+          color: "#171717",
           fontSize: 13,
           fontFamily: "inherit",
           cursor: "pointer",
@@ -576,7 +576,7 @@ export const Calendar = ({
         <ArrowBottomIcon open={isOpen} />
       </button>
 
-      {/* Dropdown — portal to escape modal transform context */}
+      {/* Dropdown â€” portal to escape modal transform context */}
       {isOpen && createPortal(
         <div
           ref={dropdownRef}
@@ -620,12 +620,12 @@ export const Calendar = ({
                 background: "none",
                 cursor: "pointer",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#EFF4FF")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#EDEDED")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
             >
               <ArrowLeftIcon />
             </button>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#0B1C30", fontFamily: "inherit" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#171717", fontFamily: "inherit" }}>
               {format(currentMonth, "MMMM yyyy")}
             </span>
             <button
@@ -642,7 +642,7 @@ export const Calendar = ({
                 background: "none",
                 cursor: "pointer",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#EFF4FF")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#EDEDED")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
             >
               <ArrowRightIcon />
@@ -675,7 +675,7 @@ export const Calendar = ({
               style={{
                 background: "none",
                 border: "none",
-                color: "#737686",
+                color: "#777777",
                 fontWeight: 500,
                 fontSize: 12,
                 cursor: "pointer",
@@ -683,7 +683,7 @@ export const Calendar = ({
                 padding: "5px 10px",
                 borderRadius: 6,
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#F8F9FF")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#EDEDED")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
             >
               Clear
@@ -692,7 +692,7 @@ export const Calendar = ({
               type="button"
               onClick={handleApply}
               style={{
-                background: "#004AC6",
+                background: "#DA0037",
                 border: "none",
                 color: "#fff",
                 fontWeight: 600,

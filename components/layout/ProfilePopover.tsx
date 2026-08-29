@@ -27,9 +27,9 @@ export function ProfilePopover({ avatarOnly }: ProfilePopoverProps) {
   return (
     <Popover>
       <PopoverTrigger
-        className="flex items-center gap-2 rounded-full px-2 py-1 hover:bg-[#F8F9FF] transition-colors border-0 bg-transparent cursor-pointer"
+        className="flex items-center gap-2 rounded-full px-2 py-1 hover:bg-[#EDEDED] transition-colors border-0 bg-transparent cursor-pointer"
       >
-        <Avatar className="h-8 w-8" style={{ border: "2px solid #2563EB" }}>
+        <Avatar className="h-8 w-8" style={{ border: "2px solid #B5002D" }}>
           <AvatarImage src="/assets/avatar-user.jpg" alt="User" />
           <AvatarFallback
             className="text-white text-xs font-semibold"

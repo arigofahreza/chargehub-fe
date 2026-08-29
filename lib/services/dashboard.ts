@@ -5,6 +5,8 @@ import {
   UsageTrendPoint,
   TopEnergyItem,
   DashboardStats,
+  BatteryHourlyData,
+  AvgKwhItem,
 } from "../types";
 
 function buildQs(filter?: DashboardFilter): string {
@@ -37,4 +39,12 @@ export function getTopEnergy(filter?: DashboardFilter, limit = 5): Promise<TopEn
 
 export function getDashboardStats(filter?: DashboardFilter): Promise<DashboardStats> {
   return api.get<DashboardStats>(`/api/v1/dashboard/stats${buildQs(filter)}`);
+}
+
+export function getBatteryHourly(filter?: DashboardFilter): Promise<BatteryHourlyData> {
+  return api.get<BatteryHourlyData>(`/api/v1/dashboard/battery-hourly${buildQs(filter)}`);
+}
+
+export function getAvgKwhPerVehicle(filter?: DashboardFilter): Promise<AvgKwhItem[]> {
+  return api.get<AvgKwhItem[]>(`/api/v1/dashboard/avg-kwh-per-vehicle${buildQs(filter)}`);
 }

@@ -1,8 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SelectDropdown } from "@/components/ui/select-dropdown";
-import { NotificationTemplate } from "@/lib/types";
+import MultipleSelector, { Option } from "@/components/ui/multiselect";
+import { NotificationTemplate, Employee } from "@/lib/types";
+import { sheetVariants, sheetOverlayVariants } from "@/lib/motion";
+import { X } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -10,23 +14,24 @@ interface Props {
   initial?: Partial<NotificationTemplate>;
   onSubmit: (data: Partial<NotificationTemplate>) => Promise<void>;
   mode: "add" | "edit";
+  employees: Employee[];
 }
 
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
-  color: "#737686",
+  color: "#777777",
 };
 
 const inputStyle: React.CSSProperties = {
   height: 44,
   borderRadius: 10,
-  background: "#EFF4FF",
-  border: "1px solid #C3C6D7",
+  background: "#fff",
+  border: "1px solid #DEDEDE",
   padding: "0 12px",
   fontSize: 14,
   fontFamily: "inherit",
-  color: "#0B1C30",
+  color: "#171717",
   outline: "none",
   width: "100%",
 };
@@ -36,9 +41,9 @@ const MAX_CHARS = 1024;
 function PhonePreview({ message }: { message: string }) {
   const hasMessage = message.trim().length > 0;
   return (
-    <div style={{ width: 240, margin: "0 auto", borderRadius: 28, background: "#1C1C1E", boxShadow: "0 0 0 3px #3A3A3C, 0 8px 24px rgba(0,0,0,0.15)", padding: 10, boxSizing: "border-box" }}>
-      <div style={{ borderRadius: 20, overflow: "hidden", background: "#EFEAE2" }}>
-        <div style={{ background: "#075E54", padding: "10px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+    <div style={{ width: 240, margin: "0 auto", borderRadius: 28, background: "#1C1C1E", boxShadow: "0 0 0 3px #3A3A3C, 0 8px 24px rgba(0,0,0,0.15)", padding: 10, boxSizing: "border-box", display: "flex", flexDirection: "column", height: 340 }}>
+      <div style={{ borderRadius: 20, overflow: "hidden", background: "#EFEAE2", display: "flex", flexDirection: "column", flex: 1 }}>
+        <div style={{ background: "#075E54", padding: "10px 12px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <div style={{ width: 26, height: 26, borderRadius: 9999, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="white" />
@@ -50,7 +55,7 @@ function PhonePreview({ message }: { message: string }) {
             <span style={{ fontSize: 9, color: "rgba(255,255,255,0.8)" }}>Official Business Account</span>
           </div>
         </div>
-        <div style={{ minHeight: 100, padding: "14px 10px", display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 8 }}>
+        <div style={{ flex: 1, minHeight: 100, padding: "14px 10px", display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 8, overflowY: "auto" }}>
           {!hasMessage && (
             <div style={{ alignSelf: "flex-start", background: "#fff", borderRadius: "12px 12px 12px 2px", padding: "10px 12px", display: "flex", gap: 4, boxShadow: "0 1px 1px rgba(0,0,0,0.1)" }}>
               <span className="typing-dot" style={{ width: 6, height: 6, borderRadius: 9999, background: "#9CA3AF", display: "block" }} />
@@ -62,7 +67,7 @@ function PhonePreview({ message }: { message: string }) {
             <div style={{ alignSelf: "flex-start", maxWidth: "85%", background: "#fff", borderRadius: "12px 12px 12px 2px", padding: "8px 10px", boxShadow: "0 1px 1px rgba(0,0,0,0.1)" }}>
               <span style={{ fontSize: 12, lineHeight: "17px", color: "#111B21", whiteSpace: "pre-wrap" }}>{message}</span>
               <div style={{ textAlign: "right", marginTop: 2 }}>
-                <span style={{ fontSize: 9, color: "#8696A0" }}>now ✓✓</span>
+                <span style={{ fontSize: 9, color: "#8696A0" }}>now âœ“âœ“</span>
               </div>
             </div>
           )}
@@ -72,9 +77,9 @@ function PhonePreview({ message }: { message: string }) {
   );
 }
 
-export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode }: Props) {
+export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode, employees }: Props) {
   const [isMobile, setIsMobile] = useState(false);
-  const [form, setForm] = useState<Partial<NotificationTemplate> & { recipientGroup?: string }>(
+  const [form, setForm] = useState<Partial<NotificationTemplate>>(
     initial ?? {
       name: "",
       message: "",
@@ -83,7 +88,7 @@ export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode 
       phoneCount: 0,
       lastSent: new Date().toISOString(),
       category: "General",
-      recipientGroup: "All Employees",
+      recipientIds: [],
     }
   );
   const [saving, setSaving] = useState(false);
@@ -96,12 +101,37 @@ export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode 
   }, []);
 
   useEffect(() => {
+    if (open) {
+      setForm(
+        initial ?? {
+          name: "",
+          message: "",
+          status: "active",
+          employeeCount: 0,
+          phoneCount: 0,
+          lastSent: new Date().toISOString(),
+          category: "General",
+          recipientIds: [],
+        }
+      );
+    }
+  }, [open, initial]);
+
+  useEffect(() => {
     if (open) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
   const charCount = (form.message ?? "").length;
+  const recipientIds = form.recipientIds ?? [];
+
+  const employeeOptions: Option[] = employees.map((e) => ({ value: e.id, label: e.name }));
+  const selectedOptions: Option[] = employeeOptions.filter((o) => recipientIds.includes(o.value));
+
+  function handleRecipientsChange(opts: Option[]) {
+    setForm((f) => ({ ...f, recipientIds: opts.map((o) => o.value) }));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -115,6 +145,28 @@ export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode 
   }
 
   const title = mode === "add" ? "Create Template" : "Edit Template";
+
+  const recipientPicker = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <label style={labelStyle}>Recipients</label>
+        {recipientIds.length > 0 && (
+          <span style={{ fontSize: 11, fontWeight: 600, color: "#DA0037" }}>
+            {recipientIds.length} selected
+          </span>
+        )}
+      </div>
+      <MultipleSelector
+        value={selectedOptions}
+        options={employeeOptions}
+        onChange={handleRecipientsChange}
+        placeholder="Select employees..."
+        hidePlaceholderWhenSelected
+        hideClearAllButton={false}
+        emptyIndicator={<p className="text-center text-sm text-[#9CA3AF]">No employees found</p>}
+      />
+    </div>
+  );
 
   const formFields = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -138,9 +190,9 @@ export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode 
           }}
           placeholder="Type your WhatsApp message here..."
           rows={4}
-          style={{ borderRadius: 10, background: "#EFF4FF", border: "1px solid #C3C6D7", padding: "10px 12px", fontSize: 14, fontFamily: "inherit", color: "#0B1C30", resize: "none", outline: "none", width: "100%" }}
+          style={{ borderRadius: 10, background: "#fff", border: "1px solid #DEDEDE", padding: "10px 12px", fontSize: 14, fontFamily: "inherit", color: "#171717", resize: "none", outline: "none", width: "100%" }}
         />
-        <span style={{ alignSelf: "flex-end", fontSize: 11, fontWeight: 600, color: "#737686" }}>{charCount} / {MAX_CHARS}</span>
+        <span style={{ alignSelf: "flex-end", fontSize: 11, fontWeight: 600, color: "#777777" }}>{charCount} / {MAX_CHARS}</span>
       </div>
       <div style={{ display: "flex", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
@@ -171,49 +223,54 @@ export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode 
           />
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        <label style={labelStyle}>Recipient Group</label>
-        <SelectDropdown
-          value={(form as { recipientGroup?: string }).recipientGroup ?? "All Employees"}
-          onChange={(val) => setForm((f) => ({ ...f, recipientGroup: val }))}
-          options={[
-            { value: "All Employees", label: "All Employees" },
-            { value: "Drivers Only", label: "Drivers Only" },
-            { value: "Fleet Managers", label: "Fleet Managers" },
-          ]}
-          style={inputStyle}
-        />
-      </div>
+      {recipientPicker}
     </div>
   );
-
-  if (!open) return null;
 
   // MOBILE: bottom sheet, single-column + preview below
   if (isMobile) {
     return (
-      <>
-        <div className="mobile-sheet-overlay" onClick={() => onOpenChange(false)} />
-        <div className="mobile-sheet">
-          <div className="mobile-sheet-handle" />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-            <span style={{ fontWeight: 700, fontSize: 17, color: "#0B1C30" }}>{title}</span>
-            <button onClick={() => onOpenChange(false)} style={{ width: 28, height: 28, border: "none", background: "none", color: "#737686", fontSize: 18, cursor: "pointer" }}>×</button>
-          </div>
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ maxHeight: "56vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 14 }}>
-              {formFields}
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <span style={labelStyle}>Live Preview</span>
-                <PhonePreview message={form.message ?? ""} />
-              </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="overlay"
+            className="mobile-sheet-overlay"
+            variants={sheetOverlayVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={() => onOpenChange(false)}
+          />
+        )}
+        {open && (
+          <motion.div
+            key="sheet"
+            className="mobile-sheet"
+            variants={sheetVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            <div className="mobile-sheet-handle" />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+              <span style={{ fontWeight: 700, fontSize: 17, color: "#171717" }}>{title}</span>
+              <button onClick={() => onOpenChange(false)} style={{ width: 28, height: 28, border: "none", background: "rgba(0,0,0,0.06)", borderRadius: 8, color: "#777777", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={15} /></button>
             </div>
-            <button type="submit" disabled={saving} style={{ height: 48, borderRadius: 12, background: "#004AC6", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving ? 0.7 : 1, flexShrink: 0 }}>
-              {saving ? "Saving..." : "Save Template"}
-            </button>
-          </form>
-        </div>
-      </>
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ maxHeight: "56vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 14 }}>
+                {formFields}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <span style={labelStyle}>Live Preview</span>
+                  <PhonePreview message={form.message ?? ""} />
+                </div>
+              </div>
+              <button type="submit" disabled={saving} style={{ height: 48, borderRadius: 12, background: "#DA0037", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving ? 0.7 : 1, flexShrink: 0 }}>
+                {saving ? "Saving..." : "Save Template"}
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
     );
   }
 
@@ -226,8 +283,8 @@ export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode 
         style={{ maxWidth: 720, maxHeight: "88vh", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 16, boxShadow: "0 24px 60px rgba(0,0,0,0.25)" }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontWeight: 700, fontSize: 18, color: "#0B1C30" }}>{title}</span>
-          <button onClick={() => onOpenChange(false)} style={{ width: 28, height: 28, border: "none", background: "none", color: "#737686", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>×</button>
+          <span style={{ fontWeight: 700, fontSize: 18, color: "#171717" }}>{title}</span>
+          <button onClick={() => onOpenChange(false)} style={{ width: 28, height: 28, border: "none", background: "rgba(0,0,0,0.06)", borderRadius: 8, color: "#777777", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={15} /></button>
         </div>
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 260px", gap: 24, overflowY: "auto" }}>
@@ -239,7 +296,7 @@ export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode 
               <PhonePreview message={form.message ?? ""} />
             </div>
           </div>
-          <button type="submit" disabled={saving} style={{ height: 48, borderRadius: 12, background: "#004AC6", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving ? 0.7 : 1 }}>
+          <button type="submit" disabled={saving} style={{ height: 48, borderRadius: 12, background: "#DA0037", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving ? 0.7 : 1 }}>
             {saving ? "Saving..." : "Save Template"}
           </button>
         </form>

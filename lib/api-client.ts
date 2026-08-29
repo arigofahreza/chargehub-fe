@@ -7,18 +7,30 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const authHeader: Record<string, string> = token
     ? { Authorization: `Bearer ${token}` }
     : {};
+  const hasBody = init?.body !== undefined;
   const url = `${API_BASE}${path}`;
   const res = await fetch(url, {
     headers: {
-      "Content-Type": "application/json",
+      ...(hasBody ? { "Content-Type": "application/json" } : {}),
       ...authHeader,
       ...init?.headers,
     },
     ...init,
   });
   if (!res.ok) {
+    if (res.status === 401) {
+      const { removeToken } = await import("./auth");
+      const { useAuthStore } = await import("@/stores/useAuthStore");
+      removeToken();
+      useAuthStore.getState().logout();
+      if (typeof window !== "undefined") window.location.href = "/login";
+      return undefined as unknown as T;
+    }
     const text = await res.text().catch(() => "");
     throw new Error(`API ${res.status}: ${text}`);
+  }
+  if (res.status === 204 || res.headers.get("content-length") === "0") {
+    return undefined as unknown as T;
   }
   return res.json() as Promise<T>;
 }

@@ -24,7 +24,7 @@ export function UsageTrendChart({ data }: Props) {
     <div
       style={{
         background: "#fff",
-        border: "1px solid #C3C6D7",
+        border: "1px solid #DEDEDE",
         borderRadius: 16,
         padding: 20,
         display: "flex",
@@ -34,10 +34,10 @@ export function UsageTrendChart({ data }: Props) {
       }}
     >
       <div>
-        <span style={{ fontWeight: 600, fontSize: 15, color: "#0B1C30", display: "block" }}>
+        <span style={{ fontWeight: 600, fontSize: 15, color: "#171717", display: "block" }}>
           Usage Trend
         </span>
-        <span style={{ fontSize: 11, color: "#737686" }}>Distance driven (Daily)</span>
+        <span style={{ fontSize: 11, color: "#777777" }}>Distance driven (Daily)</span>
       </div>
       {chartData.length === 0 ? (
         <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -48,26 +48,26 @@ export function UsageTrendChart({ data }: Props) {
           <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="kmGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#2563EB" stopOpacity={0.1} />
-                <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
+                <stop offset="5%" stopColor="#B5002D" stopOpacity={0.1} />
+                <stop offset="95%" stopColor="#B5002D" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#EFF4FF" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#EDEDED" vertical={false} />
             <XAxis
               dataKey="time"
-              tick={{ fontSize: 10, fill: "#737686" }}
+              tick={{ fontSize: 10, fill: "#777777" }}
               axisLine={false}
               tickLine={false}
             />
-            <YAxis tick={{ fontSize: 10, fill: "#737686" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: "#777777" }} axisLine={false} tickLine={false} />
             <Tooltip
-              contentStyle={{ borderRadius: 8, border: "1px solid #C3C6D7", fontSize: 12 }}
+              contentStyle={{ borderRadius: 8, border: "1px solid #DEDEDE", fontSize: 12 }}
               formatter={(v) => [`${v} km`, "Distance"]}
             />
             <Area
               type="monotone"
               dataKey="km"
-              stroke="#2563EB"
+              stroke="#B5002D"
               strokeWidth={2.5}
               fill="url(#kmGradient)"
               dot={false}

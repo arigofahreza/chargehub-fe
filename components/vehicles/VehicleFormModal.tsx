@@ -1,9 +1,12 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SelectDropdown } from "@/components/ui/select-dropdown";
 import { Vehicle } from "@/lib/types";
-import { createVehicle, uploadVehiclePhoto } from "@/lib/services/vehicles";
+import { createVehicle, updateVehicle, uploadVehiclePhoto } from "@/lib/services/vehicles";
+import { sheetVariants, sheetOverlayVariants } from "@/lib/motion";
+import { X } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -16,18 +19,18 @@ interface Props {
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 500,
-  color: "#434655",
+  color: "#444444",
 };
 
 const inputStyle: React.CSSProperties = {
   height: 46,
   borderRadius: 8,
-  background: "#EFF4FF",
-  border: "1px solid #C3C6D7",
+  background: "#fff",
+  border: "1px solid #DEDEDE",
   padding: "0 12px",
   fontSize: 14,
   fontFamily: "inherit",
-  color: "#0B1C30",
+  color: "#171717",
   width: "100%",
   outline: "none",
 };
@@ -35,7 +38,7 @@ const inputStyle: React.CSSProperties = {
 const sectionTitle: React.CSSProperties = {
   fontSize: 15,
   fontWeight: 600,
-  color: "#0B1C30",
+  color: "#171717",
 };
 
 const dividerStyle: React.CSSProperties = {
@@ -43,8 +46,7 @@ const dividerStyle: React.CSSProperties = {
   background: "#E5E7EB",
 };
 
-const VEHICLE_TYPES = ["Sedan", "SUV", "Van", "Pickup Truck", "Semi Truck"];
-const YEARS = Array.from({ length: 10 }, (_, i) => String(new Date().getFullYear() - i));
+const VEHICLE_TYPES = ["Wheel Loader", "Ekskavator"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
 
@@ -150,7 +152,7 @@ function UploadZone({
             flexShrink: 0,
           }}
         >
-          Remove
+          Hapus
         </button>
       </div>
     );
@@ -166,7 +168,7 @@ function UploadZone({
         style={{
           borderRadius: 12,
           border: `2px dashed ${error ? "var(--color-error)" : dragging ? "var(--color-brand-primary)" : "var(--color-border-ch)"}`,
-          background: dragging ? "rgba(0,74,198,0.04)" : "var(--color-surface)",
+          background: dragging ? "rgba(218,0,55,0.04)" : "var(--color-surface)",
           padding: "22px 16px",
           display: "flex",
           flexDirection: "column",
@@ -187,12 +189,12 @@ function UploadZone({
         </svg>
         <span style={{ fontSize: 13, color: "var(--color-body)", textAlign: "center" }}>
           <span style={{ color: "var(--color-brand-primary)", fontWeight: 600 }}>
-            Click to upload
+            Klik untuk unggah
           </span>{" "}
-          or drag &amp; drop
+          atau seret &amp; lepas
         </span>
         <span style={{ fontSize: 11, color: "var(--color-muted-text)" }}>
-          PNG, JPG, WebP, GIF · max 5 MB
+          PNG, JPG, WebP, GIF Â· maks 5 MB
         </span>
       </div>
       {error && (
@@ -217,12 +219,9 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
       fleetId: "",
       make: "",
       model: "",
-      year: new Date().getFullYear(),
       vin: "",
       batteryCapacity: 75,
-      maxRange: 400,
-      assignedDriver: "",
-      status: "available",
+      status: "idle",
       batteryPercent: 100,
       photoUrl: "",
     }
@@ -239,6 +238,28 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  useEffect(() => {
+    if (open) {
+      setForm(
+        initial ?? {
+          name: "",
+          fleetId: "",
+          make: "",
+          model: "",
+          vin: "",
+          batteryCapacity: 75,
+          status: "idle",
+          batteryPercent: 100,
+          photoUrl: "",
+        }
+      );
+      setPhotoFile(null);
+      setPreviewUrl(null);
+      setPhotoError(null);
+      setSubmitError(null);
+    }
+  }, [open, initial]);
 
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";
@@ -259,11 +280,11 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
   const handleFile = useCallback((file: File) => {
     setPhotoError(null);
     if (file.size > MAX_FILE_SIZE) {
-      setPhotoError("File exceeds 5 MB limit");
+      setPhotoError("File melebihi batas 5 MB");
       return;
     }
     if (!file.type.startsWith("image/")) {
-      setPhotoError("File must be an image");
+      setPhotoError("File harus berupa gambar");
       return;
     }
     if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -286,7 +307,14 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
     try {
       const vehicleName = form.name || `${form.make} ${form.model}`.trim();
       const payload = { ...form, name: vehicleName || form.make || "" };
-      let vehicle = await createVehicle(payload as Omit<Vehicle, "id">);
+      let vehicle: Vehicle;
+      if (mode === "edit" && initial?.id) {
+        const updated = await updateVehicle(initial.id, payload);
+        if (!updated) throw new Error("Update failed");
+        vehicle = updated;
+      } else {
+        vehicle = await createVehicle(payload as Omit<Vehicle, "id">);
+      }
       if (photoFile) {
         vehicle = await uploadVehiclePhoto(vehicle.id, photoFile);
       }
@@ -299,47 +327,37 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
     }
   }
 
-  const title = mode === "add" ? "Add Vehicle" : "Edit Vehicle";
+  const title = mode === "add" ? "Tambah Kendaraan" : "Edit Kendaraan";
 
   const formBody = (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Basic Information */}
+      {/* Informasi Dasar */}
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <span style={sectionTitle}>Basic Information</span>
+        <span style={sectionTitle}>Informasi Dasar</span>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Vehicle Make">
-            <input value={form.make ?? ""} onChange={(e) => set("make", e.target.value)} placeholder="e.g. Tesla" style={inputStyle} />
+          <Field label="Merek Kendaraan">
+            <input value={form.make ?? ""} onChange={(e) => set("make", e.target.value)} placeholder="cth. Sany" style={inputStyle} />
           </Field>
           <Field label="Model">
-            <input value={form.model ?? ""} onChange={(e) => set("model", e.target.value)} placeholder="e.g. Model Y" style={inputStyle} />
+            <input value={form.model ?? ""} onChange={(e) => set("model", e.target.value)} placeholder="cth. SW9966" style={inputStyle} />
           </Field>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Year">
-            <SelectDropdown
-              value={String(form.year ?? "")}
-              onChange={(val) => set("year", Number(val))}
-              options={YEARS.map((y) => ({ value: y, label: y }))}
-              style={inputStyle}
-            />
-          </Field>
-          <Field label="Vehicle Type">
-            <SelectDropdown
-              value={(form as { vehicleType?: string }).vehicleType ?? ""}
-              onChange={(val) => set("vehicleType", val)}
-              options={[
-                { value: "", label: "Select type..." },
-                ...VEHICLE_TYPES.map((t) => ({ value: t, label: t })),
-              ]}
-              style={inputStyle}
-            />
-          </Field>
-        </div>
-        <Field label="VIN (Vehicle Identification Number)">
+        <Field label="Tipe Kendaraan">
+          <SelectDropdown
+            value={(form as { vehicleType?: string }).vehicleType ?? ""}
+            onChange={(val) => set("vehicleType", val)}
+            options={[
+              { value: "", label: "Pilih tipe..." },
+              ...VEHICLE_TYPES.map((t) => ({ value: t, label: t })),
+            ]}
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Nomer Unit">
           <input
             value={form.vin ?? ""}
             onChange={(e) => set("vin", e.target.value.toUpperCase())}
-            placeholder="e.g. 5YJ3E1EA4PF000001"
+            placeholder="cth. 5901-01"
             style={{ ...inputStyle, textTransform: "uppercase" as const, letterSpacing: "0.5px" }}
           />
         </Field>
@@ -347,44 +365,38 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
 
       <div style={dividerStyle} />
 
-      {/* Technical Specs */}
+      {/* Spesifikasi Teknis */}
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <span style={sectionTitle}>Technical Specs</span>
+        <span style={sectionTitle}>Spesifikasi Teknis</span>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Battery Capacity (kWh)">
+          <Field label="Kapasitas Baterai (kWh)">
             <input type="number" value={String(form.batteryCapacity ?? "")} onChange={(e) => set("batteryCapacity", Number(e.target.value))} style={inputStyle} />
           </Field>
-          <Field label="Max Range (km)">
-            <input type="number" value={String(form.maxRange ?? "")} onChange={(e) => set("maxRange", Number(e.target.value))} style={inputStyle} />
-          </Field>
         </div>
-      </div>
-
-      <div style={dividerStyle} />
-
-      {/* Assignment */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <span style={sectionTitle}>Assignment</span>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Assigned Driver">
+        {mode === "edit" && (
+          <Field label="Tingkat Penurunan Baterai (% per jam)">
             <input
-              value={form.assignedDriver ?? ""}
-              onChange={(e) => set("assignedDriver", e.target.value)}
-              placeholder="Driver name or Unassigned"
+              type="number"
+              min={0.1}
+              max={100}
+              step={0.1}
+              value={String(form.degradationRatePct ?? 2.0)}
+              onChange={(e) => set("degradationRatePct", Number(e.target.value))}
+              placeholder="cth. 2.0"
               style={inputStyle}
             />
+            <p style={{ fontSize: 11, color: "#777777", margin: "2px 0 0" }}>
+              Default: 2.0. Naikkan jika baterai lebih cepat habis dari sebelumnya.
+            </p>
           </Field>
-          <Field label="Fleet ID">
-            <input value={form.fleetId ?? ""} onChange={(e) => set("fleetId", e.target.value)} placeholder="e.g. EV-2024-001" style={inputStyle} />
-          </Field>
-        </div>
+        )}
       </div>
 
       <div style={dividerStyle} />
 
-      {/* Vehicle Photo */}
+      {/* Foto Kendaraan */}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <span style={sectionTitle}>Vehicle Photo</span>
+        <span style={sectionTitle}>Foto Kendaraan</span>
         <UploadZone
           file={photoFile}
           previewUrl={previewUrl}
@@ -394,7 +406,7 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
         />
         {saving && photoFile && (
           <p style={{ fontSize: 11, color: "var(--color-brand-primary)", margin: 0 }}>
-            Uploading photo...
+            Mengunggah foto...
           </p>
         )}
       </div>
@@ -407,16 +419,14 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
     </div>
   );
 
-  if (!open) return null;
-
   const actions = (
     <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexShrink: 0 }}>
       <button
         type="button"
         onClick={() => onOpenChange(false)}
-        style={{ height: 40, borderRadius: 8, background: "none", border: "none", color: "#004AC6", fontWeight: 500, fontSize: 14, padding: "0 20px", fontFamily: "inherit", cursor: "pointer" }}
+        style={{ height: 40, borderRadius: 8, background: "none", border: "none", color: "#DA0037", fontWeight: 500, fontSize: 14, padding: "0 20px", fontFamily: "inherit", cursor: "pointer" }}
       >
-        Cancel
+        Batal
       </button>
       <button
         type="submit"
@@ -424,7 +434,7 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
         style={{
           height: 40,
           borderRadius: 8,
-          background: "#004AC6",
+          background: "#DA0037",
           border: "none",
           color: "#fff",
           fontWeight: 500,
@@ -436,33 +446,52 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
           opacity: saving || !!photoError ? 0.7 : 1,
         }}
       >
-        {saving ? (photoFile ? "Uploading..." : "Saving...") : title}
+        {saving ? (photoFile ? "Mengunggah..." : "Menyimpan...") : title}
       </button>
     </div>
   );
 
   if (isMobile) {
     return (
-      <>
-        <div className="mobile-sheet-overlay" onClick={() => onOpenChange(false)} />
-        <div className="mobile-sheet">
-          <div className="mobile-sheet-handle" />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-            <span style={{ fontWeight: 700, fontSize: 17, color: "#0B1C30" }}>{title}</span>
-            <button onClick={() => onOpenChange(false)} style={{ width: 28, height: 28, border: "none", background: "none", color: "#737686", fontSize: 18, cursor: "pointer" }}>×</button>
-          </div>
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14, flex: 1, overflow: "hidden" }}>
-            <div style={{ overflowY: "auto", maxHeight: "64vh", paddingBottom: 4 }}>{formBody}</div>
-            <button
-              type="submit"
-              disabled={saving || !!photoError}
-              style={{ height: 48, borderRadius: 12, background: "#004AC6", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving || !!photoError ? 0.7 : 1, flexShrink: 0 }}
-            >
-              {saving ? (photoFile ? "Uploading..." : "Saving...") : title}
-            </button>
-          </form>
-        </div>
-      </>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="overlay"
+            className="mobile-sheet-overlay"
+            variants={sheetOverlayVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={() => onOpenChange(false)}
+          />
+        )}
+        {open && (
+          <motion.div
+            key="sheet"
+            className="mobile-sheet"
+            variants={sheetVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            <div className="mobile-sheet-handle" />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+              <span style={{ fontWeight: 700, fontSize: 17, color: "#171717" }}>{title}</span>
+              <button onClick={() => onOpenChange(false)} style={{ width: 28, height: 28, border: "none", background: "rgba(0,0,0,0.06)", borderRadius: 8, color: "#777777", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={15} /></button>
+            </div>
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14, flex: 1, overflow: "hidden" }}>
+              <div style={{ overflowY: "auto", maxHeight: "64vh", paddingBottom: 4 }}>{formBody}</div>
+              <button
+                type="submit"
+                disabled={saving || !!photoError}
+                style={{ height: 48, borderRadius: 12, background: "#DA0037", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving || !!photoError ? 0.7 : 1, flexShrink: 0 }}
+              >
+                {saving ? (photoFile ? "Mengunggah..." : "Menyimpan...") : title}
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
     );
   }
 
@@ -483,8 +512,8 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontWeight: 700, fontSize: 18, color: "#0B1C30" }}>{title}</span>
-          <button onClick={() => onOpenChange(false)} style={{ width: 28, height: 28, border: "none", background: "none", color: "#737686", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>×</button>
+          <span style={{ fontWeight: 700, fontSize: 18, color: "#171717" }}>{title}</span>
+          <button onClick={() => onOpenChange(false)} style={{ width: 28, height: 28, border: "none", background: "rgba(0,0,0,0.06)", borderRadius: 8, color: "#777777", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={15} /></button>
         </div>
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20, overflowY: "auto", paddingBottom: 4 }}>
           {formBody}

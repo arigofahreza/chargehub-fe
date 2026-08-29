@@ -1,9 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SelectDropdown } from "@/components/ui/select-dropdown";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { ActivityLog, ActivityStatus } from "@/lib/types";
+import { sheetVariants, sheetOverlayVariants } from "@/lib/motion";
+import { X } from "lucide-react";
+import { predictBattery } from "@/lib/services/prediction";
+import { ServiceTypePicker } from "@/components/ui/service-type-picker";
+import { getAvgDuration } from "@/lib/services/activity";
 
 interface Props {
   open: boolean;
@@ -11,13 +17,20 @@ interface Props {
   initial?: Partial<ActivityLog>;
   onSubmit: (data: Partial<ActivityLog>) => Promise<void>;
   mode: "add" | "edit";
-  vehicleOptions: { id: string; name: string; unitId: string }[];
+  vehicleOptions: { id: string; name: string; unitId: string; batteryPercent?: number; batteryCapacityKwh?: number; degradationRatePct?: number; vehicleType?: string }[];
+  driverOptions: { value: string; label: string }[];
+}
+
+interface Recommendation {
+  slug: string;
+  label: string;
+  predicted_after: number;
 }
 
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 500,
-  color: "#434655",
+  color: "#444444",
 };
 
 const inputStyle: React.CSSProperties = {
@@ -28,19 +41,44 @@ const inputStyle: React.CSSProperties = {
   padding: "0 12px",
   fontSize: 14,
   fontFamily: "inherit",
-  color: "#0B1C30",
+  color: "#171717",
   outline: "none",
   width: "100%",
 };
 
-const SERVICE_TYPES = ["Heavy Stacking", "Light Stacking", "Maintenance Access", "Charging", "Inspection"];
-const STATUS_OPTIONS: { value: ActivityStatus; label: string }[] = [
-  { value: "completed", label: "Completed" },
-  { value: "in-progress", label: "In Progress" },
-  { value: "pending", label: "Pending" },
-];
+const SERVICE_TYPES = ["Heavy Stacking", "Light Stacking", "Maintenance Access", "Charging", "Inspection", "Loading"];
 
-export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode, vehicleOptions }: Props) {
+const ACTIVITY_MAP: Record<string, string> = {
+  "Heavy Stacking": "heavy_stacking",
+  "Light Stacking": "light_stacking",
+  "Inspection": "inspection",
+  "Maintenance Access": "inspection",
+  "Loading": "loading",
+};
+
+const EKSKAVATOR_SERVICES = ["Loading", "Charging"];
+
+function getAllowedServices(vehicleType?: string): string[] {
+  if (vehicleType === "Ekskavator") return EKSKAVATOR_SERVICES;
+  return SERVICE_TYPES;
+}
+
+const BASELINE_DEGRADATION = 2.0;
+
+function deriveShift(dateTimeStr: string): "shift_1" | "shift_2" {
+  const d = new Date(dateTimeStr);
+  const totalMin = d.getHours() * 60 + d.getMinutes();
+  // Shift 1: 06:50â€“18:49 (410â€“1129 min), Shift 2: 18:50â€“06:49
+  return totalMin >= 410 && totalMin < 1130 ? "shift_1" : "shift_2";
+}
+
+function applyDegradation(batteryBefore: number, predictedAfter: number, currentRate: number): number {
+  const rawDrain = batteryBefore - predictedAfter;
+  const scaledDrain = rawDrain * (currentRate / BASELINE_DEGRADATION);
+  return Math.max(0, Math.min(100, batteryBefore - scaledDrain));
+}
+
+export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode, vehicleOptions, driverOptions }: Props) {
   const [isMobile, setIsMobile] = useState(false);
   const [form, setForm] = useState<Partial<ActivityLog>>(
     initial ?? {
@@ -55,6 +93,11 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
     }
   );
   const [saving, setSaving] = useState(false);
+  const [lastAvgDuration, setLastAvgDuration] = useState<number | undefined>(undefined);
+  const [prediction, setPrediction] = useState<number | null>(null);
+  const [predicting, setPredicting] = useState(false);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [loadingRecs, setLoadingRecs] = useState(false);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -64,18 +107,104 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
   }, []);
 
   useEffect(() => {
-    if (open) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
+    if (open) {
+      document.body.style.overflow = "hidden";
+      setPrediction(null);
+      setLastAvgDuration(undefined);
+      setRecommendations([]);
+    } else {
+      document.body.style.overflow = "";
+    }
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
+  useEffect(() => {
+    const activity = ACTIVITY_MAP[form.serviceType ?? ""];
+    if (!activity || !form.vehicleId || !form.dateTime) {
+      setPrediction(null);
+      return;
+    }
+
+    const vehicleOption = vehicleOptions.find((v) => v.id === form.vehicleId);
+    const batteryBefore = vehicleOption?.batteryPercent ?? 100;
+    const degradationRate = vehicleOption?.degradationRatePct ?? BASELINE_DEGRADATION;
+    const shift = deriveShift(form.dateTime);
+
+    let cancelled = false;
+
+    async function run() {
+      setPredicting(true);
+      try {
+        const avgDur = await getAvgDuration(form.vehicleId!, form.serviceType!);
+        const durationMinutes = avgDur ?? 60;
+        if (!cancelled) setLastAvgDuration(avgDur ?? undefined);
+
+        const result = await predictBattery({
+          truck_id: form.vehicleId!,
+          activity,
+          duration_minutes: durationMinutes,
+          battery_before_pct: batteryBefore,
+          shift,
+        });
+
+        if (!cancelled) {
+          const adjusted = applyDegradation(batteryBefore, result.predicted_battery_after_pct, degradationRate);
+          setPrediction(adjusted);
+        }
+      } catch {
+        if (!cancelled) setPrediction(null);
+      } finally {
+        if (!cancelled) setPredicting(false);
+      }
+    }
+
+    const timer = setTimeout(run, 600);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [form.vehicleId, form.serviceType, form.dateTime, vehicleOptions]);
+
+  useEffect(() => {
+    const vehicleOption = vehicleOptions.find((v) => v.id === form.vehicleId);
+    const batteryBefore = vehicleOption?.batteryPercent;
+    if (!form.vehicleId || !batteryBefore || batteryBefore <= 0) {
+      setRecommendations([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setLoadingRecs(true);
+      try {
+        const avgDur = await getAvgDuration(form.vehicleId!, form.serviceType ?? "");
+        const durationMinutes = avgDur ?? 60;
+        const shift = form.dateTime ? deriveShift(form.dateTime) : "shift_1";
+        const res = await fetch("/api/recommend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            truck_id: form.vehicleId,
+            battery_before_pct: batteryBefore,
+            duration_minutes: durationMinutes,
+            shift,
+          }),
+        });
+        const data = await res.json();
+        setRecommendations(data.recommendations ?? []);
+      } catch {
+        setRecommendations([]);
+      } finally {
+        setLoadingRecs(false);
+      }
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [form.vehicleId, form.serviceType, form.dateTime, vehicleOptions]);
+
   function handleVehicleChange(vehicleId: string) {
     const v = vehicleOptions.find((o) => o.id === vehicleId);
+    const allowed = getAllowedServices(v?.vehicleType);
     setForm((f) => ({
       ...f,
       vehicleId,
       vehicleName: v?.name ?? "",
       unitId: v?.unitId ?? "",
+      serviceType: f.serviceType && allowed.includes(f.serviceType) ? f.serviceType : allowed[0],
     }));
   }
 
@@ -83,9 +212,19 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
     e.preventDefault();
     setSaving(true);
     try {
+      const vehicleOpt = vehicleOptions.find((v) => v.id === form.vehicleId);
+      const batteryBefore = vehicleOpt?.batteryPercent;
+      const capacity = vehicleOpt?.batteryCapacityKwh;
+      const notCharging = form.serviceType !== "Charging";
+      let energyKwh: number | undefined = undefined;
+      if (notCharging && prediction !== null && batteryBefore !== undefined && capacity) {
+        energyKwh = Math.max(0, ((batteryBefore - prediction) / 100) * capacity);
+      }
       const payload = {
         ...form,
         dateTime: form.dateTime ? new Date(form.dateTime).toISOString() : new Date().toISOString(),
+        durationMinutes: lastAvgDuration,
+        energyKwh,
       };
       await onSubmit(payload);
       onOpenChange(false);
@@ -96,33 +235,148 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
 
   const title = mode === "add" ? "New Log" : "Edit Log";
 
+  const selectedVehicle = vehicleOptions.find((v) => v.id === form.vehicleId);
+  const allowedServices = getAllowedServices(selectedVehicle?.vehicleType);
+
   const serviceChips = (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <label style={labelStyle}>Service Type</label>
-      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
-        {SERVICE_TYPES.map((s) => {
-          const active = form.serviceType === s;
+      <div style={{ overflowX: "auto", paddingBottom: 2 }}>
+        <ServiceTypePicker
+          value={form.serviceType ?? ""}
+          onChange={(v) => setForm((f) => ({ ...f, serviceType: v }))}
+          allowedValues={allowedServices}
+        />
+      </div>
+    </div>
+  );
+
+  const isCharging = form.serviceType === "Charging";
+
+  const batteryPredictionSection = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <span style={{ fontSize: 15, fontWeight: 600, color: "#171717" }}>Prediksi Baterai</span>
+
+      {isCharging && (
+        <div style={{ borderRadius: 10, background: "#FFF7ED", border: "1px solid rgba(234,179,8,0.3)", padding: "10px 14px", fontSize: 12, color: "#92400E" }}>
+          Prediksi baterai tidak tersedia untuk aktivitas Charging.
+        </div>
+      )}
+
+      {!isCharging && !form.vehicleId && (
+        <div style={{ borderRadius: 10, background: "#EDEDED", border: "1px solid rgba(195,198,215,0.5)", padding: "10px 14px", fontSize: 12, color: "#777777" }}>
+          Pilih kendaraan untuk melihat prediksi baterai.
+        </div>
+      )}
+
+      {!isCharging && form.vehicleId && predicting && (
+        <div style={{ borderRadius: 10, background: "#EDEDED", border: "1px solid rgba(195,198,215,0.5)", padding: "12px 16px", fontSize: 13, color: "#777777" }}>
+          Menghitung prediksi...
+        </div>
+      )}
+
+      {!isCharging && form.vehicleId && !predicting && prediction !== null && (
+        <div style={{ borderRadius: 10, background: "#EDEDED", border: "1px solid rgba(218,0,55,0.15)", padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <span style={{ fontSize: 11, fontWeight: 500, color: "#777777", textTransform: "uppercase", letterSpacing: "0.5px" }}>Prediksi AI</span>
+            <span style={{ fontSize: 13, color: "#444444" }}>Estimasi baterai setelah aktivitas</span>
+          </div>
+          <span style={{ fontSize: 22, fontWeight: 700, color: "#DA0037" }}>{prediction.toFixed(1)}%</span>
+        </div>
+      )}
+    </div>
+  );
+
+  const vehicleForRec = vehicleOptions.find((v) => v.id === form.vehicleId);
+  const hasRecInputs = !!form.vehicleId && (vehicleForRec?.batteryPercent ?? 0) > 0;
+
+  const recommendationPanel = (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 0,
+        background: "#EDEDED",
+        border: "1px solid rgba(195,198,215,0.5)",
+        borderRadius: 14,
+        overflow: "hidden",
+        flexShrink: 0,
+      }}
+    >
+      {/* Header */}
+      <div style={{ padding: "14px 16px 12px", borderBottom: "1px solid rgba(195,198,215,0.4)", background: "#fff" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(218,0,55,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#DA0037" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4M12 8h.01" />
+            </svg>
+          </div>
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#171717", margin: 0 }}>Activity Advisor</p>
+            <p style={{ fontSize: 10, color: "#777777", margin: 0 }}>AI-ranked by remaining battery</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8, minHeight: 180 }}>
+        {!hasRecInputs && !loadingRecs && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, gap: 6, paddingTop: 24 }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#DEDEDE" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+            <p style={{ fontSize: 12, color: "#9CA3AF", textAlign: "center", margin: 0 }}>
+              Select vehicle, fill battery &amp; duration to see recommendations
+            </p>
+          </div>
+        )}
+
+        {loadingRecs && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} style={{ height: 52, borderRadius: 10, background: "linear-gradient(90deg, #E8ECF4 25%, #F0F3FA 50%, #E8ECF4 75%)", backgroundSize: "200% 100%", animation: "shimmer 1.5s infinite" }} />
+            ))}
+            <style>{`@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }`}</style>
+          </div>
+        )}
+
+        {!loadingRecs && hasRecInputs && recommendations.length === 0 && (
+          <p style={{ fontSize: 12, color: "#9CA3AF", textAlign: "center", paddingTop: 20 }}>
+            Could not load recommendations. Check ML service.
+          </p>
+        )}
+
+        {!loadingRecs && recommendations.map((rec, i) => {
+          const pct = rec.predicted_after;
+          const color = pct >= 40 ? "#00714D" : pct >= 20 ? "#B45309" : "#BA1A1A";
+          const bg = pct >= 40 ? "rgba(0,113,77,0.07)" : pct >= 20 ? "rgba(180,83,9,0.07)" : "rgba(186,26,26,0.07)";
+          const icon = pct >= 40 ? "âœ“" : pct >= 20 ? "!" : "âœ•";
+          const barWidth = Math.max(0, Math.min(100, pct));
           return (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setForm((f) => ({ ...f, serviceType: s }))}
+            <div
+              key={rec.slug}
               style={{
-                flexShrink: 0,
-                padding: "8px 14px",
-                borderRadius: 8,
-                background: active ? "#004AC6" : "#EFF4FF",
-                border: active ? "none" : "1px solid rgba(195,198,215,0.5)",
-                color: active ? "#fff" : "#434655",
-                fontSize: 12,
-                fontWeight: 600,
-                fontFamily: "inherit",
-                cursor: "pointer",
-                whiteSpace: "nowrap",
+                background: "#fff",
+                border: `1px solid ${pct >= 40 ? "rgba(0,113,77,0.15)" : pct >= 20 ? "rgba(180,83,9,0.15)" : "rgba(186,26,26,0.15)"}`,
+                borderRadius: 10,
+                padding: "10px 12px",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
               }}
             >
-              {s}
-            </button>
+              <div style={{ width: 26, height: 26, borderRadius: 7, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 13, fontWeight: 700, color }}>
+                {icon}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: "#171717", margin: 0, marginBottom: 4 }}>{rec.label}</p>
+                <div style={{ height: 4, borderRadius: 9999, background: "rgba(195,198,215,0.3)", overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${barWidth}%`, borderRadius: 9999, background: color, transition: "width 0.4s ease" }} />
+                </div>
+              </div>
+              <span style={{ fontSize: 14, fontWeight: 700, color, flexShrink: 0 }}>{pct.toFixed(1)}%</span>
+            </div>
           );
         })}
       </div>
@@ -151,185 +405,176 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
         />
       </div>
       {serviceChips}
-      <div style={{ display: "flex", gap: 12 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
-          <label style={labelStyle}>Driver Name</label>
-          <input
-            value={form.driver ?? ""}
-            onChange={(e) => setForm((f) => ({ ...f, driver: e.target.value }))}
-            placeholder="Driver name"
-            style={inputStyle}
-          />
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
-          <label style={labelStyle}>Status</label>
-          <SelectDropdown
-            value={form.status ?? "pending"}
-            onChange={(val) => setForm((f) => ({ ...f, status: val as ActivityStatus }))}
-            options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-            style={inputStyle}
-          />
-        </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+        <label style={labelStyle}>Driver Name</label>
+        <SelectDropdown
+          value={form.driver ?? ""}
+          onChange={(val) => setForm((f) => ({ ...f, driver: val }))}
+          options={[{ value: "", label: "Select driver..." }, ...driverOptions]}
+          style={inputStyle}
+        />
       </div>
     </div>
   );
 
-  if (!open) return null;
-
   // MOBILE: bottom sheet
   if (isMobile) {
     return (
-      <>
-        <div className="mobile-sheet-overlay" onClick={() => onOpenChange(false)} />
-        <div className="mobile-sheet">
-          <div className="mobile-sheet-handle" />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-            <span style={{ fontWeight: 700, fontSize: 17, color: "#0B1C30" }}>{title}</span>
-            <button onClick={() => onOpenChange(false)} style={{ width: 28, height: 28, border: "none", background: "none", color: "#737686", fontSize: 18, cursor: "pointer" }}>×</button>
-          </div>
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ maxHeight: "56vh", overflowY: "auto" }}>
-              {formBody}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="overlay"
+            className="mobile-sheet-overlay"
+            variants={sheetOverlayVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={() => onOpenChange(false)}
+          />
+        )}
+        {open && (
+          <motion.div
+            key="sheet"
+            className="mobile-sheet"
+            variants={sheetVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            <div className="mobile-sheet-handle" />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+              <span style={{ fontWeight: 700, fontSize: 17, color: "#171717" }}>{title}</span>
+              <button onClick={() => onOpenChange(false)} style={{ width: 28, height: 28, border: "none", background: "rgba(0,0,0,0.06)", borderRadius: 8, color: "#777777", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={15} /></button>
             </div>
-            <button
-              type="submit"
-              disabled={saving}
-              style={{ height: 48, borderRadius: 12, background: "#004AC6", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving ? 0.7 : 1, flexShrink: 0 }}
-            >
-              {saving ? "Saving..." : mode === "add" ? "Create Log" : "Save Changes"}
-            </button>
-          </form>
-        </div>
-      </>
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ maxHeight: "56vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 14 }}>
+                {formBody}
+                <div style={{ height: 1, background: "#E5E7EB" }} />
+                {batteryPredictionSection}
+                <div style={{ height: 1, background: "#E5E7EB" }} />
+                {recommendationPanel}
+              </div>
+              <button
+                type="submit"
+                disabled={saving}
+                style={{ height: 48, borderRadius: 12, background: "#DA0037", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving ? 0.7 : 1, flexShrink: 0 }}
+              >
+                {saving ? "Saving..." : mode === "add" ? "Create Log" : "Save Changes"}
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
     );
   }
 
-  // DESKTOP: 2-section dialog
+  // DESKTOP: 2-column dialog (form left, advisor right)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="overflow-y-auto"
         style={{
-          maxWidth: 600,
-          maxHeight: "88vh",
+          maxWidth: 860,
+          maxHeight: "90vh",
           borderRadius: 16,
           padding: 24,
           display: "flex",
           flexDirection: "column",
           gap: 16,
           boxShadow: "0 24px 60px rgba(0,0,0,0.25)",
+          overflow: "hidden",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontWeight: 700, fontSize: 18, color: "#0B1C30" }}>{title}</span>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+          <span style={{ fontWeight: 700, fontSize: 18, color: "#171717" }}>{title}</span>
           <button
             onClick={() => onOpenChange(false)}
-            style={{ width: 28, height: 28, border: "none", background: "none", color: "#737686", fontSize: 18, cursor: "pointer", lineHeight: 1 }}
+            style={{ width: 28, height: 28, border: "none", background: "rgba(0,0,0,0.06)", borderRadius: 8, color: "#777777", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
-            ×
+            <X size={15} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20, overflowY: "auto", paddingBottom: 4 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <span style={{ fontSize: 15, fontWeight: 600, color: "#0B1C30" }}>Basic Information</span>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                <label style={labelStyle}>Date &amp; Time</label>
-                <DateTimePicker
-                  value={form.dateTime ? new Date(form.dateTime) : null}
-                  onChange={(date) => setForm((f) => ({ ...f, dateTime: date?.toISOString() ?? "" }))}
-                />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                <label style={labelStyle}>Vehicle Assignment</label>
-                <SelectDropdown
-                  value={form.vehicleId ?? ""}
-                  onChange={handleVehicleChange}
-                  options={[
-                    { value: "", label: "Select vehicle..." },
-                    ...vehicleOptions.map((v) => ({ value: v.id, label: `${v.name} - ${v.unitId}` })),
-                  ]}
-                  style={inputStyle}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div style={{ height: 1, background: "#E5E7EB" }} />
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <span style={{ fontSize: 15, fontWeight: 600, color: "#0B1C30" }}>Operational Details</span>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label style={labelStyle}>Service Type</label>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {SERVICE_TYPES.map((s) => {
-                  const active = form.serviceType === s;
-                  return (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setForm((f) => ({ ...f, serviceType: s }))}
-                      style={{
-                        flexShrink: 0,
-                        padding: "8px 14px",
-                        borderRadius: 8,
-                        background: active ? "#004AC6" : "#EFF4FF",
-                        border: active ? "none" : "1px solid rgba(195,198,215,0.5)",
-                        color: active ? "#fff" : "#434655",
-                        fontSize: 12,
-                        fontWeight: 600,
-                        fontFamily: "inherit",
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {s}
-                    </button>
-                  );
-                })}
+        {/* 2-column body */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 20, overflow: "hidden", flex: 1 }}>
+          {/* Left: form */}
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16, overflowY: "auto", paddingBottom: 4, paddingRight: 4 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "#171717" }}>Basic Information</span>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  <label style={labelStyle}>Date &amp; Time</label>
+                  <DateTimePicker
+                    value={form.dateTime ? new Date(form.dateTime) : null}
+                    onChange={(date) => setForm((f) => ({ ...f, dateTime: date?.toISOString() ?? "" }))}
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  <label style={labelStyle}>Vehicle Assignment</label>
+                  <SelectDropdown
+                    value={form.vehicleId ?? ""}
+                    onChange={handleVehicleChange}
+                    options={[
+                      { value: "", label: "Select vehicle..." },
+                      ...vehicleOptions.map((v) => ({ value: v.id, label: `${v.name} - ${v.unitId}` })),
+                    ]}
+                    style={inputStyle}
+                  />
+                </div>
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+
+            <div style={{ height: 1, background: "#E5E7EB" }} />
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "#171717" }}>Operational Details</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={labelStyle}>Service Type</label>
+                <ServiceTypePicker
+                  value={form.serviceType ?? ""}
+                  onChange={(v) => setForm((f) => ({ ...f, serviceType: v }))}
+                  allowedValues={allowedServices}
+                />
+              </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 <label style={labelStyle}>Driver Name</label>
-                <input
-                  value={form.driver ?? ""}
-                  onChange={(e) => setForm((f) => ({ ...f, driver: e.target.value }))}
-                  placeholder="Driver name"
-                  style={inputStyle}
-                />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                <label style={labelStyle}>Status</label>
                 <SelectDropdown
-                  value={form.status ?? "pending"}
-                  onChange={(val) => setForm((f) => ({ ...f, status: val as ActivityStatus }))}
-                  options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                  value={form.driver ?? ""}
+                  onChange={(val) => setForm((f) => ({ ...f, driver: val }))}
+                  options={[{ value: "", label: "Select driver..." }, ...driverOptions]}
                   style={inputStyle}
                 />
               </div>
             </div>
-          </div>
 
-          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              style={{ height: 40, borderRadius: 8, background: "none", border: "none", color: "#004AC6", fontWeight: 500, fontSize: 14, padding: "0 20px", fontFamily: "inherit", cursor: "pointer" }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              style={{ height: 40, borderRadius: 8, background: "#004AC6", border: "none", color: "#fff", fontWeight: 500, fontSize: 14, padding: "0 20px", fontFamily: "inherit", boxShadow: "0 1px 2px rgba(0,0,0,0.05)", cursor: "pointer", opacity: saving ? 0.7 : 1 }}
-            >
-              {saving ? "Saving..." : mode === "add" ? "Create Log" : "Save Changes"}
-            </button>
+            <div style={{ height: 1, background: "#E5E7EB" }} />
+
+            {batteryPredictionSection}
+
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 4 }}>
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                style={{ height: 40, borderRadius: 8, background: "none", border: "none", color: "#DA0037", fontWeight: 500, fontSize: 14, padding: "0 20px", fontFamily: "inherit", cursor: "pointer" }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                style={{ height: 40, borderRadius: 8, background: "#DA0037", border: "none", color: "#fff", fontWeight: 500, fontSize: 14, padding: "0 20px", fontFamily: "inherit", boxShadow: "0 1px 2px rgba(0,0,0,0.05)", cursor: "pointer", opacity: saving ? 0.7 : 1 }}
+              >
+                {saving ? "Saving..." : mode === "add" ? "Create Log" : "Save Changes"}
+              </button>
+            </div>
+          </form>
+
+          {/* Right: advisor panel */}
+          <div style={{ overflowY: "auto" }}>
+            {recommendationPanel}
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

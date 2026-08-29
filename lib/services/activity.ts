@@ -31,3 +31,27 @@ export async function updateActivityLog(
     return null;
   }
 }
+
+export async function deleteActivityLog(id: string): Promise<boolean> {
+  try {
+    await api.delete(`/api/v1/activities/${id}`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function getAvgDuration(
+  vehicleId: string,
+  serviceType: string
+): Promise<number | null> {
+  try {
+    const params = new URLSearchParams({ vehicleId, serviceType });
+    const result = await api.get<{ avgDurationMinutes: number | null }>(
+      `/api/v1/activities/avg-duration?${params}`
+    );
+    return result.avgDurationMinutes;
+  } catch {
+    return null;
+  }
+}

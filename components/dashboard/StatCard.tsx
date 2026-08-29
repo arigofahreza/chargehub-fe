@@ -12,7 +12,7 @@ export function StatCard({ label, value, badge, badgeBg, badgeColor, icon }: Sta
     <div
       style={{
         background: "#fff",
-        border: "1px solid #C3C6D7",
+        border: "1px solid #DEDEDE",
         borderRadius: 14,
         padding: 16,
         display: "flex",
@@ -38,11 +38,11 @@ export function StatCard({ label, value, badge, badgeBg, badgeColor, icon }: Sta
           </span>
         )}
       </div>
-      <span style={{ fontSize: 22, fontWeight: 700, color: "#0B1C30" }}>{value}</span>
+      <span style={{ fontSize: 22, fontWeight: 700, color: "#171717" }}>{value}</span>
       <span
         style={{
           fontSize: 9,
-          color: "#737686",
+          color: "#777777",
           letterSpacing: "0.3px",
           textTransform: "uppercase",
         }}

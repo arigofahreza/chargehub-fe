@@ -60,7 +60,10 @@ export function SelectDropdown({
         </span>
         <ChevronDown size={14} style={{ flexShrink: 0, opacity: 0.5 }} />
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="min-w-[--radix-dropdown-menu-trigger-width]">
+      <DropdownMenuContent
+        className="min-w-[--radix-dropdown-menu-trigger-width]"
+        style={{ maxHeight: 200, overflowY: "auto" }}
+      >
         {options.map((option) => (
           <DropdownMenuItem
             key={option.value}
@@ -68,7 +71,7 @@ export function SelectDropdown({
             style={{
               cursor: "pointer",
               fontWeight: value === option.value ? 600 : 400,
-              color: value === option.value ? "#004AC6" : undefined,
+              color: value === option.value ? "#DA0037" : undefined,
             }}
           >
             {option.label}

@@ -46,14 +46,14 @@
   --radius-xl: calc(var(--radius) * 1.4);
 
   /* ChargeHub design tokens */
-  --color-brand-primary: #004AC6;
-  --color-brand-accent: #2563EB;
-  --color-ink: #0B1C30;
-  --color-body: #434655;
-  --color-muted-text: #737686;
-  --color-border-ch: #C3C6D7;
-  --color-surface: #F8F9FF;
-  --color-page: #E9EAF2;
+  --color-brand-primary: #DA0037;
+  --color-brand-accent: #B5002D;
+  --color-ink: #171717;
+  --color-body: #444444;
+  --color-muted-text: #777777;
+  --color-border-ch: #DEDEDE;
+  --color-surface: #F8F8F8;
+  --color-page: #F0F0F0;
   --color-success: #00714D;
   --color-success-light: #6CF8BB;
   --color-warning: #7A3E00;
@@ -69,7 +69,7 @@
 
   --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.05);
   --shadow-float: 0 10px 30px rgba(11,28,48,0.15);
-  --shadow-btn: 0 8px 16px -4px rgba(0,74,198,0.35);
+  --shadow-btn: 0 8px 16px -4px rgba(218,0,55,0.35);
   --shadow-logo: 0 4px 12px rgba(11,28,48,0.15);
 
   /* Shugar calendar design tokens */
@@ -105,23 +105,23 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: #004AC6;
+  --primary: #DA0037;
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: #737686;
+  --muted-foreground: #777777;
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: #BA1A1A;
-  --border: #C3C6D7;
-  --input: #C3C6D7;
-  --ring: #004AC6;
-  --chart-1: #2563EB;
+  --border: #DEDEDE;
+  --input: #DEDEDE;
+  --ring: #DA0037;
+  --chart-1: #DA0037;
   --chart-2: #00714D;
   --chart-3: #7A3E00;
-  --chart-4: #BA1A1A;
-  --chart-5: #737686;
+  --chart-4: #B5002D;
+  --chart-5: #777777;
   --radius: 0.75rem;
 
   /* Shugar design system values */
@@ -151,14 +151,14 @@
   --ds-shadow-modal: var(--ds-shadow-border), 0px 4px 8px rgba(0,0,0,0.04), 0px 16px 32px rgba(0,0,0,0.08);
   --ds-shadow-fullscreen: 0px 8px 24px rgba(0,0,0,0.12);
 
-  --sidebar: #F8F9FF;
-  --sidebar-foreground: #0B1C30;
-  --sidebar-primary: #004AC6;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #171717;
+  --sidebar-primary: #DA0037;
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: rgba(0,74,198,0.08);
-  --sidebar-accent-foreground: #004AC6;
-  --sidebar-border: #C3C6D7;
-  --sidebar-ring: #004AC6;
+  --sidebar-accent: rgba(218,0,55,0.08);
+  --sidebar-accent-foreground: #DA0037;
+  --sidebar-border: #DEDEDE;
+  --sidebar-ring: #DA0037;
 }
 
 @layer base {
@@ -222,7 +222,6 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  animation: slideUp 0.25s ease;
   box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.15);
   max-height: 92vh;
   overflow-y: auto;
@@ -232,7 +231,7 @@
   width: 36px;
   height: 4px;
   border-radius: 9999px;
-  background: #C3C6D7;
+  background: #DEDEDE;
   margin: 8px auto 0 auto;
   flex-shrink: 0;
 }

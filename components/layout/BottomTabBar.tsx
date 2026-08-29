@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 const allTabs = [
@@ -112,12 +113,25 @@ export function BottomTabBar() {
                 justifyContent: "center",
                 borderRadius: 9999,
                 padding: "6px 14px",
-                background: active ? "rgba(0,74,198,0.1)" : "transparent",
-                color: active ? "#004AC6" : "#737686",
-                transition: "all 0.15s ease",
+                position: "relative",
+                color: active ? "#DA0037" : "#777777",
+                transition: "color 0.15s ease",
               }}
             >
-              {icon}
+              {active && (
+                <motion.div
+                  layoutId="bottom-tab-indicator"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: 9999,
+                    background: "rgba(218,0,55,0.1)",
+                    zIndex: 0,
+                  }}
+                  transition={{ type: "spring", damping: 35, stiffness: 400 }}
+                />
+              )}
+              <span style={{ position: "relative", zIndex: 1 }}>{icon}</span>
             </Link>
           );
         })}

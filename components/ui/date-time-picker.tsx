@@ -14,12 +14,12 @@ interface DateTimePickerProps {
 const timeSelectStyle: React.CSSProperties = {
   height: 36,
   borderRadius: 8,
-  background: "#EFF4FF",
-  border: "1px solid #C3C6D7",
+  background: "#fff",
+  border: "1px solid #DEDEDE",
   padding: "0 8px",
   fontSize: 13,
   fontFamily: "inherit",
-  color: "#0B1C30",
+  color: "#171717",
   outline: "none",
   cursor: "pointer",
 };
@@ -35,7 +35,7 @@ export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
-  // Sync incoming value → internal state
+  // Sync incoming value â†’ internal state
   React.useEffect(() => {
     if (value) {
       setDate(value);
@@ -102,7 +102,7 @@ export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
   const handleAmpm = (ap: string) => { setAmpm(ap); combine(date, hour, minute, ap); };
 
   const displayLabel = date
-    ? `${format(date, "EEE, MMM d")} · ${hour}:${minute} ${ampm}`
+    ? `${format(date, "EEE, MMM d")} Â· ${hour}:${minute} ${ampm}`
     : "Select date & time";
 
   return (
@@ -118,12 +118,12 @@ export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
           gap: 8,
           height: 44,
           borderRadius: 10,
-          background: "#EFF4FF",
-          border: isOpen ? "1px solid #004AC6" : "1px solid #C3C6D7",
+          background: "#fff",
+          border: isOpen ? "1px solid #DA0037" : "1px solid #DEDEDE",
           padding: "0 12px",
           fontSize: 14,
           fontFamily: "inherit",
-          color: date ? "#0B1C30" : "#737686",
+          color: date ? "#171717" : "#777777",
           cursor: "pointer",
           width: "100%",
           textAlign: "left",
@@ -131,7 +131,7 @@ export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
           outline: "none",
         }}
       >
-        <CalendarIcon size={14} style={{ flexShrink: 0, color: "#737686" }} />
+        <CalendarIcon size={14} style={{ flexShrink: 0, color: "#777777" }} />
         <span style={{ flex: 1 }}>{displayLabel}</span>
       </button>
 
@@ -160,16 +160,16 @@ export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
         document.body,
       )}
 
-      {/* Time selects — always visible */}
+      {/* Time selects â€” always visible */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <Clock size={14} style={{ color: "#737686", flexShrink: 0 }} />
+        <Clock size={14} style={{ color: "#777777", flexShrink: 0 }} />
         <select value={hour} onChange={(e) => handleHour(e.target.value)} style={timeSelectStyle}>
           {Array.from({ length: 12 }, (_, i) => {
             const h = (i + 1).toString().padStart(2, "0");
             return <option key={h} value={h}>{h}</option>;
           })}
         </select>
-        <span style={{ fontSize: 14, color: "#737686", fontWeight: 600 }}>:</span>
+        <span style={{ fontSize: 14, color: "#777777", fontWeight: 600 }}>:</span>
         <select value={minute} onChange={(e) => handleMinute(e.target.value)} style={timeSelectStyle}>
           {["00", "15", "30", "45"].map((m) => (
             <option key={m} value={m}>{m}</option>

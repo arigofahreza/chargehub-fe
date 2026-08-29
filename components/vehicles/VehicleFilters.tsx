@@ -3,10 +3,10 @@ import { useFilterStore } from "@/stores/useFilterStore";
 import { VehicleStatus } from "@/lib/types";
 
 const chips: { label: string; value: VehicleStatus | "all" }[] = [
-  { label: "All", value: "all" },
-  { label: "Available", value: "available" },
-  { label: "In Use", value: "in-use" },
-  { label: "Service", value: "service" },
+  { label: "Semua", value: "all" },
+  { label: "Idle", value: "idle" },
+  { label: "Working", value: "working" },
+  { label: "Charging", value: "charging" },
 ];
 
 export function VehicleFilters() {
@@ -36,11 +36,11 @@ export function VehicleFilters() {
             width: "100%",
             height: 42,
             borderRadius: 10,
-            background: "#EFF4FF",
+            background: "#EDEDED",
             border: "1px solid rgba(195,198,215,0.5)",
             padding: "0 14px 0 36px",
             fontSize: 14,
-            color: "#0B1C30",
+            color: "#171717",
             fontFamily: "inherit",
             outline: "none",
           }}
@@ -52,8 +52,8 @@ export function VehicleFilters() {
           fill="none"
           style={{ position: "absolute", left: 11, top: 13, pointerEvents: "none" }}
         >
-          <circle cx="7" cy="7" r="6" stroke="#737686" strokeWidth="2" />
-          <line x1="12" y1="12" x2="17" y2="17" stroke="#737686" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="7" cy="7" r="6" stroke="#777777" strokeWidth="2" />
+          <line x1="12" y1="12" x2="17" y2="17" stroke="#777777" strokeWidth="2" strokeLinecap="round" />
         </svg>
       </div>
 
@@ -68,7 +68,7 @@ export function VehicleFilters() {
               className="text-xs font-semibold px-3 py-1.5 transition-colors"
               style={{
                 borderRadius: "9999px",
-                backgroundColor: active ? "var(--color-brand-primary)" : "#EFF4FF",
+                backgroundColor: active ? "var(--color-brand-primary)" : "#EDEDED",
                 color: active ? "white" : "var(--color-body)",
                 border: `1px solid ${active ? "var(--color-brand-primary)" : "rgba(195,198,215,0.5)"}`,
               }}

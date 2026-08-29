@@ -6,12 +6,14 @@ export function getToken(): string | null {
   return localStorage.getItem(KEY);
 }
 
+const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+
 export function setToken(token: string): void {
   localStorage.setItem(KEY, token);
-  document.cookie = `${COOKIE}=${token}; path=/; max-age=3600; SameSite=Lax`;
+  document.cookie = `${COOKIE}=${token}; path=/; max-age=86400; SameSite=Lax${isSecure ? "; Secure" : ""}`;
 }
 
 export function removeToken(): void {
   localStorage.removeItem(KEY);
-  document.cookie = `${COOKIE}=; path=/; max-age=0`;
+  document.cookie = `${COOKIE}=; path=/; max-age=0${isSecure ? "; Secure" : ""}`;
 }
