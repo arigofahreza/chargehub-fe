@@ -8,7 +8,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   LabelList,
-  Cell,
 } from "recharts";
 import { AvgKwhItem } from "@/lib/types";
 
@@ -16,11 +15,21 @@ interface Props {
   data: AvgKwhItem[];
 }
 
+function formatRupiah(amount: number): string {
+  return "Rp " + amount.toLocaleString("id-ID");
+}
+
 function shortenName(name: string): string {
   return name.length > 12 ? name.slice(0, 11) + "…" : name;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+function formatYAxis(v: number): string {
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}jt`;
+  if (v >= 1_000) return `${(v / 1_000).toFixed(0)}rb`;
+  return String(v);
+}
+
+const CustomTooltip = ({ active, payload }: any) => {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload as AvgKwhItem;
   return (
@@ -37,14 +46,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     >
       <div style={{ fontWeight: 600, color: "#171717", marginBottom: 6 }}>{d.vehicleName}</div>
       <div style={{ color: "#444", marginBottom: 2 }}>
-        <span style={{ color: "#DA0037", fontWeight: 700 }}>{d.avgKwh} kWh</span> rata-rata/sesi
+        <span style={{ color: "#00714D", fontWeight: 700 }}>{formatRupiah(d.estimatedCost)}</span>
       </div>
-      <div style={{ color: "#999", fontSize: 11 }}>{d.sessionCount} sesi charging</div>
+      <div style={{ color: "#999", fontSize: 11 }}>{d.avgKwh} kWh rata-rata · {d.sessionCount} sesi</div>
     </div>
   );
 };
 
-export function AvgKwhChart({ data }: Props) {
+export function EstimasiCostChart({ data }: Props) {
   const chartData = data.map((d) => ({ ...d, label: shortenName(d.vehicleName) }));
 
   return (
@@ -63,20 +72,20 @@ export function AvgKwhChart({ data }: Props) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <span style={{ fontWeight: 600, fontSize: 15, color: "#171717", display: "block" }}>
-            Rata-rata kWh per Kendaraan
+            Estimasi Biaya per Kendaraan
           </span>
           <span style={{ fontSize: 11, color: "#777777" }}>
-            Rata-rata energi per sesi charging
+            Tarif: 1 kWh = Rp 1.114
           </span>
         </div>
         {data.length > 0 && (
           <div
             style={{
-              background: "rgba(218,0,55,0.06)",
+              background: "rgba(0,113,77,0.08)",
               borderRadius: 8,
               padding: "4px 10px",
               fontSize: 11,
-              color: "#DA0037",
+              color: "#00714D",
               fontWeight: 600,
             }}
           >
@@ -93,13 +102,13 @@ export function AvgKwhChart({ data }: Props) {
         <ResponsiveContainer width="100%" height={220}>
           <BarChart
             data={chartData}
-            margin={{ top: 24, right: 8, left: -10, bottom: 0 }}
+            margin={{ top: 24, right: 8, left: 8, bottom: 0 }}
             barCategoryGap="35%"
           >
             <defs>
-              <linearGradient id="kwhBarGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#DA0037" stopOpacity={0.9} />
-                <stop offset="100%" stopColor="#B5002D" stopOpacity={0.7} />
+              <linearGradient id="costBarGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#00714D" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="#005A3E" stopOpacity={0.7} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#EDEDED" vertical={false} />
@@ -113,15 +122,15 @@ export function AvgKwhChart({ data }: Props) {
               tick={{ fontSize: 10, fill: "#777777" }}
               axisLine={false}
               tickLine={false}
-              unit=" kWh"
-              width={55}
+              tickFormatter={formatYAxis}
+              width={48}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(218,0,55,0.04)" }} />
-            <Bar dataKey="avgKwh" fill="url(#kwhBarGrad)" radius={[6, 6, 0, 0]} maxBarSize={48}>
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0,113,77,0.04)" }} />
+            <Bar dataKey="estimatedCost" fill="url(#costBarGrad)" radius={[6, 6, 0, 0]} maxBarSize={48}>
               <LabelList
-                dataKey="avgKwh"
+                dataKey="estimatedCost"
                 position="top"
-                formatter={(v: number) => `${v}`}
+                formatter={(v: number) => formatYAxis(v)}
                 style={{ fontSize: 10, fill: "#555", fontWeight: 600 }}
               />
             </Bar>

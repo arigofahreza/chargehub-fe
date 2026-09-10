@@ -4,9 +4,26 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SelectDropdown } from "@/components/ui/select-dropdown";
 import { Employee } from "@/lib/types";
-import { getJobTitles } from "@/lib/services/employees";
 import { sheetVariants, sheetOverlayVariants } from "@/lib/motion";
 import { X } from "lucide-react";
+import { getEmployeeCategories } from "@/lib/services/management";
+import { api } from "@/lib/api-client";
+
+interface UserOption {
+  id: string;
+  fullName: string;
+  phone: string;
+  role: string;
+}
+
+const JABATAN_FALLBACK = [
+  "Pengawas",
+  "Operator Loader",
+  "Operator Eksavator",
+  "Admin",
+  "Checker",
+  "Engineering",
+];
 
 interface Props {
   open: boolean;
@@ -41,11 +58,10 @@ export function EmployeeFormModal({ open, onOpenChange, initial, onSubmit, mode 
     initial ?? { name: "", jobTitle: "", phone: "", status: "active", initials: "" }
   );
   const [saving, setSaving] = useState(false);
-  const [jobTitles, setJobTitles] = useState<string[]>([]);
-
-  useEffect(() => {
-    getJobTitles().then(setJobTitles).catch(() => {});
-  }, []);
+  const [jabatanOptions, setJabatanOptions] = useState<string[]>([]);
+  const [roleJobtitleMap, setRoleJobtitleMap] = useState<Record<string, string[]>>({});
+  const [userOptions, setUserOptions] = useState<UserOption[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState("");
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -60,8 +76,39 @@ export function EmployeeFormModal({ open, onOpenChange, initial, onSubmit, mode 
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
+  useEffect(() => {
+    getEmployeeCategories()
+      .then((data) => setJabatanOptions(data.map((c) => c.name)))
+      .catch(() => setJabatanOptions(JABATAN_FALLBACK));
+    api.get<Record<string, string[]>>("/api/v1/job-titles/role-map")
+      .then(setRoleJobtitleMap)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (mode !== "add") return;
+    api.get<UserOption[]>("/api/v1/users/for-employee")
+      .then(setUserOptions)
+      .catch(() => {});
+  }, [mode]);
+
   function set(key: keyof Employee, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function handleSelectUser(userId: string) {
+    setSelectedUserId(userId);
+    if (!userId) return;
+    const u = userOptions.find((o) => o.id === userId);
+    if (!u) return;
+    const initials = u.fullName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+    setForm((f) => ({
+      ...f,
+      name: u.fullName,
+      phone: u.phone,
+      jobTitle: (() => { const opts = roleJobtitleMap[u.role]; return opts?.length === 1 ? opts[0] : f.jobTitle; })(),
+      initials,
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -77,10 +124,30 @@ export function EmployeeFormModal({ open, onOpenChange, initial, onSubmit, mode 
 
   const title = mode === "add" ? "Tambah Karyawan" : "Edit Karyawan";
 
+  const canSave = !!(form.name?.trim() && form.phone?.trim() && form.jobTitle);
+
+  const reqMark = <span style={{ color: "#DA0037", marginLeft: 2 }}>*</span>;
+
+  const autofillSection = mode === "add" && userOptions.length > 0 ? (
+    <div style={{ display: "flex", flexDirection: "column", gap: 5, padding: "10px 12px", background: "#F4F5F7", borderRadius: 10, border: "1px solid #DEDEDE" }}>
+      <label style={{ ...labelStyle, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.4px" }}>Isi dari akun terdaftar (opsional)</label>
+      <SelectDropdown
+        value={selectedUserId}
+        onChange={handleSelectUser}
+        options={[
+          { value: "", label: "Pilih akun pengguna..." },
+          ...userOptions.map((u) => ({ value: u.id, label: u.fullName || u.id })),
+        ]}
+        style={{ ...inputStyle, background: "#fff", height: 40, fontSize: 13 }}
+      />
+    </div>
+  ) : null;
+
   const formBody = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {autofillSection}
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        <label style={labelStyle}>Nama Lengkap</label>
+        <label style={labelStyle}>Nama Lengkap{reqMark}</label>
         <input
           value={form.name ?? ""}
           onChange={(e) => {
@@ -94,19 +161,19 @@ export function EmployeeFormModal({ open, onOpenChange, initial, onSubmit, mode 
       </div>
       <div style={{ display: "flex", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
-          <label style={labelStyle}>Jabatan</label>
+          <label style={labelStyle}>Jabatan{reqMark}</label>
           <SelectDropdown
             value={form.jobTitle ?? ""}
             onChange={(val) => set("jobTitle", val)}
             options={[
               { value: "", label: "Pilih jabatan..." },
-              ...jobTitles.map((t) => ({ value: t, label: t })),
+              ...jabatanOptions.map((t) => ({ value: t, label: t })),
             ]}
             style={inputStyle}
           />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
-          <label style={labelStyle}>Telepon</label>
+          <label style={labelStyle}>Nomor Telepon{reqMark}</label>
           <input type="tel" value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value)} placeholder="+62 812-0000-0000" style={inputStyle} />
         </div>
       </div>
@@ -161,8 +228,8 @@ export function EmployeeFormModal({ open, onOpenChange, initial, onSubmit, mode 
               </div>
               <button
                 type="submit"
-                disabled={saving}
-                style={{ height: 48, borderRadius: 12, background: "#DA0037", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving ? 0.7 : 1 }}
+                disabled={saving || !canSave}
+                style={{ height: 48, borderRadius: 12, background: "#DA0037", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: canSave && !saving ? "pointer" : "not-allowed", opacity: saving || !canSave ? 0.45 : 1 }}
               >
                 {saving ? "Menyimpan..." : "Simpan Karyawan"}
               </button>
@@ -188,8 +255,8 @@ export function EmployeeFormModal({ open, onOpenChange, initial, onSubmit, mode 
           {formBody}
           <button
             type="submit"
-            disabled={saving}
-            style={{ marginTop: 4, height: 48, borderRadius: 12, background: "#DA0037", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving ? 0.7 : 1 }}
+            disabled={saving || !canSave}
+            style={{ marginTop: 4, height: 48, borderRadius: 12, background: "#DA0037", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: canSave && !saving ? "pointer" : "not-allowed", opacity: saving || !canSave ? 0.45 : 1 }}
           >
             {saving ? "Menyimpan..." : "Simpan Karyawan"}
           </button>

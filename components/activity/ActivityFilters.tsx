@@ -31,6 +31,14 @@ export function ActivityFilters({ vehicleOptions }: Props) {
     activityFilter.vehicleId !== "all" ||
     dateRange !== null;
 
+  function handleDateChange(range: RangeValue | null) {
+    setDateRange(range);
+    setActivityFilter({
+      dateFrom: range?.start?.toISOString(),
+      dateTo: range?.end?.toISOString(),
+    });
+  }
+
   const presets = useMemo(() => {
     const now = new Date();
     return {
@@ -46,6 +54,7 @@ export function ActivityFilters({ vehicleOptions }: Props) {
   const handleClearAll = () => {
     clearActivityFilters();
     setDateRange(null);
+    setActivityFilter({ dateFrom: undefined, dateTo: undefined });
   };
 
   return (
@@ -64,7 +73,7 @@ export function ActivityFilters({ vehicleOptions }: Props) {
       {/* Date range calendar picker */}
       <Calendar
         value={dateRange}
-        onChange={setDateRange}
+        onChange={handleDateChange}
         presets={presets}
         showTimeInput={false}
         showTimezone={false}

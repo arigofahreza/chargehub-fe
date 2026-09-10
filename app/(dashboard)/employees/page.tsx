@@ -1,29 +1,23 @@
 "use client";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
 import { fadeUpVariants } from "@/lib/motion";
 import { EmployeeTable } from "@/components/employees/EmployeeTable";
 import { EmployeeFormModal } from "@/components/employees/EmployeeFormModal";
 import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from "@/lib/services/employees";
 import { Employee, EmployeeStatus } from "@/lib/types";
 import { Wave } from "@/components/ui/wave";
-import { useAuthStore } from "@/stores/useAuthStore";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const statusChips: { label: string; value: EmployeeStatus | "all" }[] = [
-  { label: "All", value: "all" },
-  { label: "Active", value: "active" },
-  { label: "On Leave", value: "on-leave" },
-  { label: "Inactive", value: "inactive" },
+  { label: "Semua", value: "all" },
+  { label: "Aktif", value: "active" },
+  { label: "Cuti", value: "on-leave" },
+  { label: "Tidak Aktif", value: "inactive" },
 ];
 
 export default function EmployeesPage() {
-  const router = useRouter();
-  const user = useAuthStore((s) => s.user);
-
-  useEffect(() => {
-    if (user && user.role !== "admin") router.replace("/dashboard");
-  }, [user, router]);
+  const perms = usePermissions();
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [statusFilter, setStatusFilter] = useState<EmployeeStatus | "all">("all");
@@ -69,25 +63,25 @@ export default function EmployeesPage() {
     setModalOpen(true);
   }
 
-  if (user?.role !== "admin") return null;
-
   return (
     <motion.div variants={fadeUpVariants} initial="hidden" animate="visible">
       <main className="p-4 md:p-6 space-y-5">
         {/* Title row */}
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 style={{ fontWeight: 700, fontSize: 22, color: "#171717", letterSpacing: "-0.4px" }}>Employees</h1>
-            <p style={{ fontSize: 13, color: "#444444" }}>Manage fleet personnel.</p>
+            <h1 style={{ fontWeight: 700, fontSize: 22, color: "#171717", letterSpacing: "-0.4px" }}>Karyawan</h1>
+            <p style={{ fontSize: 13, color: "#444444" }}>Kelola personel armada kendaraan.</p>
           </div>
-          <button
-            onClick={handleAdd}
-            className="flex items-center gap-1.5 flex-shrink-0"
-            style={{ background: "#DA0037", border: "none", borderRadius: 10, color: "#fff", fontSize: 11, fontWeight: 600, padding: "9px 14px", fontFamily: "inherit", cursor: "pointer" }}
-          >
-            <span style={{ fontSize: 14, lineHeight: 1 }}>+</span>
-            Add Employee
-          </button>
+          {perms.canWriteEmployees && (
+            <button
+              onClick={handleAdd}
+              className="flex items-center gap-1.5 flex-shrink-0"
+              style={{ background: "#DA0037", border: "none", borderRadius: 10, color: "#fff", fontSize: 11, fontWeight: 600, padding: "9px 14px", fontFamily: "inherit", cursor: "pointer" }}
+            >
+              <span style={{ fontSize: 14, lineHeight: 1 }}>+</span>
+              Tambah Karyawan
+            </button>
+          )}
         </div>
 
         {/* Filter card: search + status chips */}
@@ -106,7 +100,7 @@ export default function EmployeesPage() {
           <div style={{ position: "relative", flex: 1, maxWidth: 360 }}>
             <input
               type="text"
-              placeholder="Search employees..."
+              placeholder="Cari karyawan..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
@@ -158,15 +152,15 @@ export default function EmployeesPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <Wave className="size-16 text-[#DA0037]" />
-            <p className="text-sm" style={{ color: "var(--color-muted-text)" }}>Loading employees...</p>
+            <p className="text-sm" style={{ color: "var(--color-muted-text)" }}>Memuat karyawan...</p>
           </div>
         ) : (
           <>
             <p className="text-xs" style={{ color: "var(--color-muted-text)" }}>
-              {filtered.length} employee{filtered.length !== 1 ? "s" : ""}
+              {filtered.length} karyawan
             </p>
-            <EmployeeTable employees={filtered} onEdit={handleEdit} onDelete={handleDelete} />
-            <span className="md:hidden block text-center text-xs" style={{ color: "#9CA3AF" }}>← swipe table to see more →</span>
+            <EmployeeTable employees={filtered} onEdit={handleEdit} onDelete={handleDelete} canWrite={perms.canWriteEmployees} />
+            <span className="md:hidden block text-center text-xs" style={{ color: "#9CA3AF" }}>← geser tabel untuk lihat selengkapnya →</span>
           </>
         )}
       </main>

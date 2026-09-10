@@ -5,6 +5,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SelectDropdown } from "@/components/ui/select-dropdown";
 import { Vehicle } from "@/lib/types";
 import { createVehicle, updateVehicle, uploadVehiclePhoto } from "@/lib/services/vehicles";
+import { getVehicleCategories } from "@/lib/services/management";
 import { sheetVariants, sheetOverlayVariants } from "@/lib/motion";
 import { X } from "lucide-react";
 
@@ -46,18 +47,23 @@ const dividerStyle: React.CSSProperties = {
   background: "#E5E7EB",
 };
 
-const VEHICLE_TYPES = ["Wheel Loader", "Ekskavator"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, required, error, children }: { label: string; required?: boolean; error?: string; children: React.ReactNode }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <label style={labelStyle}>{label}</label>
+      <label style={labelStyle}>
+        {label}
+        {required && <span style={{ color: "var(--color-error)", marginLeft: 3 }}>*</span>}
+      </label>
       {children}
+      {error && <p style={{ fontSize: 11, color: "var(--color-error)", margin: 0 }}>{error}</p>}
     </div>
   );
 }
+
+const errorBorder = "1px solid var(--color-error)";
 
 function UploadZone({
   file,
@@ -194,7 +200,7 @@ function UploadZone({
           atau seret &amp; lepas
         </span>
         <span style={{ fontSize: 11, color: "var(--color-muted-text)" }}>
-          PNG, JPG, WebP, GIF Â· maks 5 MB
+          PNG, JPG, WebP, GIF - maks 5 MB
         </span>
       </div>
       {error && (
@@ -226,17 +232,25 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
       photoUrl: "",
     }
   );
+  const [vehicleTypes, setVehicleTypes] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => {
+    getVehicleCategories()
+      .then((cats) => setVehicleTypes(cats.map((c) => c.name)))
+      .catch(() => setVehicleTypes(["Wheel Loader", "Ekskavator", "Dump Truck", "Motor Grader"]));
   }, []);
 
   useEffect(() => {
@@ -258,6 +272,7 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
       setPreviewUrl(null);
       setPhotoError(null);
       setSubmitError(null);
+      setFieldErrors({});
     }
   }, [open, initial]);
 
@@ -273,8 +288,32 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
     };
   }, [previewUrl]);
 
+  const canSave = !!(
+    form.make?.trim() &&
+    form.model?.trim() &&
+    (form as { vehicleType?: string }).vehicleType?.trim() &&
+    form.vin?.trim() &&
+    form.batteryCapacity && Number(form.batteryCapacity) > 0
+  );
+
   function set(key: string, value: string | number) {
     setForm((f) => ({ ...f, [key]: value }));
+    setFieldErrors((e) => {
+      if (!e[key]) return e;
+      const next = { ...e };
+      delete next[key];
+      return next;
+    });
+  }
+
+  function validate(): Record<string, string> {
+    const errs: Record<string, string> = {};
+    if (!form.make?.trim()) errs.make = "Merek wajib diisi";
+    if (!form.model?.trim()) errs.model = "Model wajib diisi";
+    if (!(form as { vehicleType?: string }).vehicleType?.trim()) errs.vehicleType = "Tipe wajib dipilih";
+    if (!form.vin?.trim()) errs.vin = "Nomer unit wajib diisi";
+    if (!form.batteryCapacity || Number(form.batteryCapacity) <= 0) errs.batteryCapacity = "Kapasitas baterai wajib diisi";
+    return errs;
   }
 
   const handleFile = useCallback((file: File) => {
@@ -302,6 +341,11 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (photoError) return;
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      return;
+    }
     setSaving(true);
     setSubmitError(null);
     try {
@@ -335,30 +379,30 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <span style={sectionTitle}>Informasi Dasar</span>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Merek Kendaraan">
-            <input value={form.make ?? ""} onChange={(e) => set("make", e.target.value)} placeholder="cth. Sany" style={inputStyle} />
+          <Field label="Merek Kendaraan" required error={fieldErrors.make}>
+            <input value={form.make ?? ""} onChange={(e) => set("make", e.target.value)} placeholder="cth. Sany" style={fieldErrors.make ? { ...inputStyle, border: errorBorder } : inputStyle} />
           </Field>
-          <Field label="Model">
-            <input value={form.model ?? ""} onChange={(e) => set("model", e.target.value)} placeholder="cth. SW9966" style={inputStyle} />
+          <Field label="Model" required error={fieldErrors.model}>
+            <input value={form.model ?? ""} onChange={(e) => set("model", e.target.value)} placeholder="cth. SW9966" style={fieldErrors.model ? { ...inputStyle, border: errorBorder } : inputStyle} />
           </Field>
         </div>
-        <Field label="Tipe Kendaraan">
+        <Field label="Tipe Kendaraan" required error={fieldErrors.vehicleType}>
           <SelectDropdown
             value={(form as { vehicleType?: string }).vehicleType ?? ""}
             onChange={(val) => set("vehicleType", val)}
             options={[
               { value: "", label: "Pilih tipe..." },
-              ...VEHICLE_TYPES.map((t) => ({ value: t, label: t })),
+              ...vehicleTypes.map((t) => ({ value: t, label: t })),
             ]}
-            style={inputStyle}
+            style={fieldErrors.vehicleType ? { ...inputStyle, border: errorBorder } : inputStyle}
           />
         </Field>
-        <Field label="Nomer Unit">
+        <Field label="Nomer Unit" required error={fieldErrors.vin}>
           <input
             value={form.vin ?? ""}
             onChange={(e) => set("vin", e.target.value.toUpperCase())}
             placeholder="cth. 5901-01"
-            style={{ ...inputStyle, textTransform: "uppercase" as const, letterSpacing: "0.5px" }}
+            style={{ ...inputStyle, border: fieldErrors.vin ? errorBorder : inputStyle.border, textTransform: "uppercase" as const, letterSpacing: "0.5px" }}
           />
         </Field>
       </div>
@@ -369,8 +413,8 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <span style={sectionTitle}>Spesifikasi Teknis</span>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Kapasitas Baterai (kWh)">
-            <input type="number" value={String(form.batteryCapacity ?? "")} onChange={(e) => set("batteryCapacity", Number(e.target.value))} style={inputStyle} />
+          <Field label="Kapasitas Baterai (kWh)" required error={fieldErrors.batteryCapacity}>
+            <input type="number" value={String(form.batteryCapacity ?? "")} onChange={(e) => set("batteryCapacity", Number(e.target.value))} style={fieldErrors.batteryCapacity ? { ...inputStyle, border: errorBorder } : inputStyle} />
           </Field>
         </div>
         {mode === "edit" && (
@@ -430,7 +474,7 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
       </button>
       <button
         type="submit"
-        disabled={saving || !!photoError}
+        disabled={saving || !!photoError || !canSave}
         style={{
           height: 40,
           borderRadius: 8,
@@ -442,8 +486,8 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
           padding: "0 20px",
           fontFamily: "inherit",
           boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-          cursor: saving ? "not-allowed" : "pointer",
-          opacity: saving || !!photoError ? 0.7 : 1,
+          cursor: canSave && !saving && !photoError ? "pointer" : "not-allowed",
+          opacity: saving || !!photoError || !canSave ? 0.45 : 1,
         }}
       >
         {saving ? (photoFile ? "Mengunggah..." : "Menyimpan...") : title}
@@ -483,8 +527,8 @@ export function VehicleFormModal({ open, onOpenChange, initial, onSubmit, mode }
               <div style={{ overflowY: "auto", maxHeight: "64vh", paddingBottom: 4 }}>{formBody}</div>
               <button
                 type="submit"
-                disabled={saving || !!photoError}
-                style={{ height: 48, borderRadius: 12, background: "#DA0037", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving || !!photoError ? 0.7 : 1, flexShrink: 0 }}
+                disabled={saving || !!photoError || !canSave}
+                style={{ height: 48, borderRadius: 12, background: "#DA0037", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: canSave && !saving && !photoError ? "pointer" : "not-allowed", opacity: saving || !!photoError || !canSave ? 0.45 : 1, flexShrink: 0 }}
               >
                 {saving ? (photoFile ? "Mengunggah..." : "Menyimpan...") : title}
               </button>

@@ -36,10 +36,10 @@ export function BatteryHourlyChart({ data }: Props) {
           <span style={{ fontWeight: 600, fontSize: 15, color: "#171717", display: "block" }}>
             Rata-rata Konsumsi Baterai / Jam
           </span>
-          <span style={{ fontSize: 11, color: "#777777" }}>Avg kWh per hour of day</span>
+          <span style={{ fontSize: 11, color: "#777777" }}>Rata-rata kWh per jam dalam sehari</span>
         </div>
         <div style={{ height: 160, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontSize: 12, color: "#9CA3AF" }}>No data for selected period</span>
+          <span style={{ fontSize: 12, color: "#9CA3AF" }}>Tidak ada data untuk periode ini</span>
         </div>
       </div>
     );
@@ -68,7 +68,7 @@ export function BatteryHourlyChart({ data }: Props) {
         <span style={{ fontWeight: 600, fontSize: 15, color: "#171717", display: "block" }}>
           Rata-rata Konsumsi Baterai / Jam
         </span>
-        <span style={{ fontSize: 11, color: "#777777" }}>Avg kWh per hour of day (stacked per vehicle)</span>
+        <span style={{ fontSize: 11, color: "#777777" }}>Rata-rata kWh per jam (per kendaraan)</span>
       </div>
       <div style={{ flex: 1, minHeight: 160 }}>
       <ResponsiveContainer width="100%" height="100%">

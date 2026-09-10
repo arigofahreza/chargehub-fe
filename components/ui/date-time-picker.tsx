@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import { CalendarIcon, Clock } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Calendar } from "@/components/ui/calendar";
@@ -27,29 +28,23 @@ const timeSelectStyle: React.CSSProperties = {
 export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [date, setDate] = React.useState<Date | undefined>(value ?? undefined);
-  const [hour, setHour] = React.useState("12");
-  const [minute, setMinute] = React.useState("00");
-  const [ampm, setAmpm] = React.useState("AM");
+  const [hour, setHour] = React.useState(() => value ? value.getHours().toString().padStart(2, "0") : "00");
+  const [minute, setMinute] = React.useState(() => value ? value.getMinutes().toString().padStart(2, "0") : "00");
   const [dropdownPos, setDropdownPos] = React.useState({ top: 0, left: 0 });
 
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
-  // Sync incoming value â†’ internal state
   React.useEffect(() => {
     if (value) {
       setDate(value);
-      const h = value.getHours();
-      setAmpm(h >= 12 ? "PM" : "AM");
-      const h12 = h % 12 || 12;
-      setHour(h12.toString().padStart(2, "0"));
+      setHour(value.getHours().toString().padStart(2, "0"));
       setMinute(value.getMinutes().toString().padStart(2, "0"));
     } else {
       setDate(undefined);
     }
   }, [value]);
 
-  // Close on outside click
   React.useEffect(() => {
     if (!isOpen) return;
     function handleClick(e: MouseEvent) {
@@ -65,13 +60,10 @@ export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
   }, [isOpen]);
 
   const combine = React.useCallback(
-    (d: Date | undefined, h: string, m: string, ap: string) => {
+    (d: Date | undefined, h: string, m: string) => {
       if (!d) { onChange(null); return; }
       const result = new Date(d);
-      let hour24 = parseInt(h);
-      if (ap === "PM" && hour24 < 12) hour24 += 12;
-      if (ap === "AM" && hour24 === 12) hour24 = 0;
-      result.setHours(hour24, parseInt(m), 0, 0);
+      result.setHours(parseInt(h), parseInt(m), 0, 0);
       onChange(result);
     },
     [onChange],
@@ -94,20 +86,18 @@ export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
   const handleDateSelect = (d: Date | undefined) => {
     setDate(d);
     setIsOpen(false);
-    combine(d, hour, minute, ampm);
+    combine(d, hour, minute);
   };
 
-  const handleHour = (h: string) => { setHour(h); combine(date, h, minute, ampm); };
-  const handleMinute = (m: string) => { setMinute(m); combine(date, hour, m, ampm); };
-  const handleAmpm = (ap: string) => { setAmpm(ap); combine(date, hour, minute, ap); };
+  const handleHour = (h: string) => { setHour(h); combine(date, h, minute); };
+  const handleMinute = (m: string) => { setMinute(m); combine(date, hour, m); };
 
   const displayLabel = date
-    ? `${format(date, "EEE, MMM d")} Â· ${hour}:${minute} ${ampm}`
-    : "Select date & time";
+    ? `${format(date, "EEE, d MMM", { locale: id })} - ${hour}:${minute}`
+    : "Pilih tanggal & waktu";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {/* Date trigger */}
       <button
         ref={triggerRef}
         type="button"
@@ -135,7 +125,6 @@ export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
         <span style={{ flex: 1 }}>{displayLabel}</span>
       </button>
 
-      {/* Calendar dropdown portal */}
       {isOpen && typeof window !== "undefined" && createPortal(
         <div
           ref={dropdownRef}
@@ -160,24 +149,20 @@ export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
         document.body,
       )}
 
-      {/* Time selects â€” always visible */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <Clock size={14} style={{ color: "#777777", flexShrink: 0 }} />
         <select value={hour} onChange={(e) => handleHour(e.target.value)} style={timeSelectStyle}>
-          {Array.from({ length: 12 }, (_, i) => {
-            const h = (i + 1).toString().padStart(2, "0");
+          {Array.from({ length: 24 }, (_, i) => {
+            const h = i.toString().padStart(2, "0");
             return <option key={h} value={h}>{h}</option>;
           })}
         </select>
         <span style={{ fontSize: 14, color: "#777777", fontWeight: 600 }}>:</span>
         <select value={minute} onChange={(e) => handleMinute(e.target.value)} style={timeSelectStyle}>
-          {["00", "15", "30", "45"].map((m) => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
-        <select value={ampm} onChange={(e) => handleAmpm(e.target.value)} style={timeSelectStyle}>
-          <option value="AM">AM</option>
-          <option value="PM">PM</option>
+          {Array.from({ length: 60 }, (_, i) => {
+            const m = i.toString().padStart(2, "0");
+            return <option key={m} value={m}>{m}</option>;
+          })}
         </select>
       </div>
     </div>

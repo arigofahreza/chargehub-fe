@@ -51,7 +51,7 @@ export function VehicleUsageTimeChart({ logs }: Props) {
 
       {items.length === 0 ? (
         <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontSize: 12, color: "#9CA3AF" }}>No data for selected period</span>
+          <span style={{ fontSize: 12, color: "#9CA3AF" }}>Tidak ada data untuk periode ini</span>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

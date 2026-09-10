@@ -21,6 +21,7 @@ interface SelectDropdownProps {
   style?: React.CSSProperties;
   className?: string;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 export function SelectDropdown({
@@ -30,21 +31,24 @@ export function SelectDropdown({
   style,
   className,
   placeholder = "Select...",
+  disabled = false,
 }: SelectDropdownProps) {
   const selectedLabel = options.find((o) => o.value === value)?.label ?? placeholder;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
+        disabled={disabled}
         className={className}
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 8,
-          cursor: "pointer",
+          cursor: disabled ? "not-allowed" : "pointer",
           textAlign: "left",
           fontFamily: "inherit",
+          opacity: disabled ? 0.5 : 1,
           ...style,
         }}
       >

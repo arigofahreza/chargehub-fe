@@ -5,7 +5,7 @@ import { startOfDay, endOfDay, subDays, subMonths, subWeeks } from "date-fns";
 import { fadeUpVariants, staggerContainerVariants } from "@/lib/motion";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { SelectedVehicleCard } from "@/components/dashboard/SelectedVehicleCard";
-import { UsageTrendChart } from "@/components/dashboard/UsageTrendChart";
+import { EstimasiCostChart } from "@/components/dashboard/EstimasiCostChart";
 import { VehicleUsageTimeChart } from "@/components/dashboard/VehicleUsageTimeChart";
 import { BatteryHourlyChart } from "@/components/dashboard/BatteryHourlyChart";
 import { TopEnergyList } from "@/components/dashboard/TopEnergyList";
@@ -15,7 +15,6 @@ import { Calendar, RangeValue } from "@/components/ui/calendar-range";
 import { getVehicles } from "@/lib/services/vehicles";
 import { useActivityStore } from "@/stores/useActivityStore";
 import {
-  getUsageTrend,
   getTopEnergy,
   getDashboardStats,
   getBatteryHourly,
@@ -23,7 +22,6 @@ import {
 } from "@/lib/services/dashboard";
 import {
   Vehicle,
-  UsageTrendPoint,
   TopEnergyItem,
   DashboardStats,
   DashboardFilter,
@@ -32,6 +30,7 @@ import {
 } from "@/lib/types";
 import { Wave } from "@/components/ui/wave";
 import { SelectDropdown } from "@/components/ui/select-dropdown";
+import { DownloadDashboardButton } from "@/components/dashboard/DownloadDashboardButton";
 
 const selectStyle: React.CSSProperties = {
   height: 38,
@@ -81,7 +80,6 @@ const FilterIcon = () => (
 export default function DashboardPage() {
   const { logs, fetchLogs } = useActivityStore();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [usageTrend, setUsageTrend] = useState<UsageTrendPoint[]>([]);
   const [topEnergy, setTopEnergy] = useState<TopEnergyItem[]>([]);
   const [dashStats, setDashStats] = useState<DashboardStats | null>(null);
   const [batteryHourly, setBatteryHourly] = useState<BatteryHourlyData | null>(null);
@@ -118,13 +116,11 @@ export default function DashboardPage() {
     setLoading(true);
     Promise.all([
       getDashboardStats(filter),
-      getUsageTrend(filter),
       getTopEnergy(filter),
       getBatteryHourly(filter),
       getAvgKwhPerVehicle(filter),
-    ]).then(([ds, ut, te, bh, ak]) => {
+    ]).then(([ds, te, bh, ak]) => {
       setDashStats(ds);
-      setUsageTrend(ut);
       setTopEnergy(te);
       setBatteryHourly(bh);
       setAvgKwhData(ak);
@@ -169,6 +165,21 @@ export default function DashboardPage() {
     [filteredLogs],
   );
 
+  const shiftEnergy = useMemo(() => {
+    let pagi = 0;
+    let malam = 0;
+    for (const l of filteredLogs) {
+      const h = new Date(l.dateTime).getHours();
+      const kwh = l.energyKwh ?? 0;
+      if (h >= 7 && h < 19) pagi += kwh;
+      else malam += kwh;
+    }
+    return {
+      pagi: Math.round(pagi * 10) / 10,
+      malam: Math.round(malam * 10) / 10,
+    };
+  }, [filteredLogs]);
+
   return (
     <>
       <main
@@ -179,9 +190,9 @@ export default function DashboardPage() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <span style={{ fontWeight: 700, fontSize: 28, color: "#171717", letterSpacing: "-0.4px", lineHeight: "1.2" }}>
-              Fleet Analytics
+              Analitik Armada
             </span>
-            <span style={{ fontSize: 14, color: "#444444" }}>Real-time monitoring across your fleet.</span>
+            <span style={{ fontSize: 14, color: "#444444" }}>Pemantauan armada kendaraan secara real-time.</span>
           </div>
 
           {/* Filter bar */}
@@ -203,7 +214,7 @@ export default function DashboardPage() {
                 value={vehicleId}
                 onChange={setVehicleId}
                 options={[
-                  { value: "all", label: `All Vehicles (${vehicles.length})` },
+                  { value: "all", label: `Semua Kendaraan (${vehicles.length})` },
                   ...vehicles.map((v) => ({ value: v.id, label: v.name })),
                 ]}
                 style={{ ...selectStyle, background: "transparent", border: "none", padding: 0, height: 30 }}
@@ -233,16 +244,18 @@ export default function DashboardPage() {
                   cursor: "pointer",
                 }}
               >
-                Clear
+                Hapus Filter
               </button>
             )}
+
+            <DownloadDashboardButton filter={filter} />
           </div>
         </div>
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <Wave className="size-16 text-[#DA0037]" />
-            <p className="text-sm" style={{ color: "var(--color-muted-text)" }}>Loading dashboard...</p>
+            <p className="text-sm" style={{ color: "var(--color-muted-text)" }}>Memuat dasbor...</p>
           </div>
         ) : (
           <>
@@ -265,23 +278,63 @@ export default function DashboardPage() {
               </motion.div>
               <motion.div variants={fadeUpVariants}>
                 <StatCard
-                  label="Energy Used"
+                  label="Energi Terpakai"
                   value={dashStats ? `${dashStats.totalKwh} kWh` : "—"}
-                  badge="Total consumed"
+                  badge="Total konsumsi"
                   badgeBg="rgba(0,113,77,0.1)"
                   badgeColor="#00714D"
                   icon={<EcoIcon />}
                 />
               </motion.div>
               <motion.div variants={fadeUpVariants}>
-                <StatCard
-                  label="Avg Battery"
-                  value={dashStats ? `${dashStats.avgBatteryPct}%` : "—"}
-                  badge="Fleet average"
-                  badgeBg="transparent"
-                  badgeColor="#00714D"
-                  icon={<DollarIcon />}
-                />
+                <div
+                  style={{
+                    background: "#fff",
+                    border: "1px solid #DEDEDE",
+                    borderRadius: 14,
+                    padding: 16,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
+                    height: "100%",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <DollarIcon />
+                    <span style={{ fontSize: 8, fontWeight: 700, color: "#777777", letterSpacing: "0.3px", textTransform: "uppercase" as const }}>Energi per Shift</span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0, flex: 1 }}>
+                    {/* Shift Pagi */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingRight: 10, borderRight: "1px solid #EDEDED" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <span style={{ fontSize: 10, color: "#DA0037", fontWeight: 700 }}>☀</span>
+                        <span style={{ fontSize: 8, fontWeight: 600, color: "#777", textTransform: "uppercase" as const, letterSpacing: "0.3px" }}>Pagi 07–19</span>
+                        {shiftEnergy.pagi >= shiftEnergy.malam && (
+                          <span style={{ fontSize: 7, fontWeight: 700, color: "#DA0037", background: "rgba(218,0,55,0.08)", borderRadius: 3, padding: "1px 4px" }}>MAX</span>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                        <span style={{ fontSize: 20, fontWeight: 700, color: "#171717" }}>{shiftEnergy.pagi}</span>
+                        <span style={{ fontSize: 9, color: "#9CA3AF" }}>kWh</span>
+                      </div>
+                    </div>
+                    {/* Shift Malam */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingLeft: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <span style={{ fontSize: 10, color: "#5B6AD0", fontWeight: 700 }}>☾</span>
+                        <span style={{ fontSize: 8, fontWeight: 600, color: "#777", textTransform: "uppercase" as const, letterSpacing: "0.3px" }}>Malam 19–07</span>
+                        {shiftEnergy.malam > shiftEnergy.pagi && (
+                          <span style={{ fontSize: 7, fontWeight: 700, color: "#DA0037", background: "rgba(218,0,55,0.08)", borderRadius: 3, padding: "1px 4px" }}>MAX</span>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                        <span style={{ fontSize: 20, fontWeight: 700, color: "#171717" }}>{shiftEnergy.malam}</span>
+                        <span style={{ fontSize: 9, color: "#9CA3AF" }}>kWh</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </motion.div>
               <motion.div variants={fadeUpVariants}>
                 <StatCard
@@ -301,11 +354,11 @@ export default function DashboardPage() {
               <VehicleUsageTimeChart logs={filteredLogs} />
             </div>
 
-            {/* Row 2: UsageTrendChart — full width */}
-            <UsageTrendChart data={usageTrend} />
-
-            {/* Row 3: AvgKwhChart — full width */}
-            <AvgKwhChart data={avgKwhData} />
+            {/* Row 2: AvgKwhChart | EstimasiCostChart — side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+              <AvgKwhChart data={avgKwhData} />
+              <EstimasiCostChart data={avgKwhData} />
+            </div>
 
             {/* Row 4: BatteryHourlyChart | LastActivityFeed — side by side */}
             <div className="grid grid-cols-1 md:grid-cols-[3fr_1fr] gap-4 md:gap-5 items-stretch">

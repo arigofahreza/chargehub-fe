@@ -4,6 +4,7 @@ import { formatDate } from "@/lib/utils";
 interface Props {
   template: NotificationTemplate;
   onEdit: () => void;
+  canWrite?: boolean;
 }
 
 const ICON_BG = ["#FFDAD6", "#EDEDED", "#FFDDB8", "#EDEDED"];
@@ -17,7 +18,7 @@ function getIconBg(id: string) {
   return iconBgMap[id];
 }
 
-export function TemplateCard({ template, onEdit }: Props) {
+export function TemplateCard({ template, onEdit, canWrite }: Props) {
   const active = template.status === "active";
   const iconBg = getIconBg(template.id);
 
@@ -66,27 +67,29 @@ export function TemplateCard({ template, onEdit }: Props) {
               color: active ? "#00714D" : "#444444",
             }}
           >
-            {active ? "Active" : "Draft"}
+            {active ? "Aktif" : "Draf"}
           </span>
-          <button
-            onClick={onEdit}
-            style={{
-              width: 26,
-              height: 26,
-              borderRadius: 9999,
-              border: "1px solid #DEDEDE",
-              background: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              cursor: "pointer",
-            }}
-          >
-            <svg width="11" height="11" viewBox="0 0 18 18" fill="none">
-              <path d="M2 16L2.5 12.5L12 3L15 6L5.5 15.5L2 16Z" fill="#444444" />
-            </svg>
-          </button>
+          {canWrite !== false && (
+            <button
+              onClick={onEdit}
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: 9999,
+                border: "1px solid #DEDEDE",
+                background: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                cursor: "pointer",
+              }}
+            >
+              <svg width="11" height="11" viewBox="0 0 18 18" fill="none">
+                <path d="M2 16L2.5 12.5L12 3L15 6L5.5 15.5L2 16Z" fill="#444444" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
@@ -109,9 +112,8 @@ export function TemplateCard({ template, onEdit }: Props) {
           </span>
         )}
         <div style={{ display: "flex", gap: 12, fontSize: 11, color: "#777777", flexWrap: "wrap" }}>
-          <span>{template.employeeCount} employees</span>
-          <span>{template.phoneCount} numbers</span>
-          <span>Sent {formatDate(template.lastSent)}</span>
+          <span>{template.phoneCount} nomor</span>
+          <span>Dikirim {formatDate(template.lastSent)}</span>
         </div>
       </div>
 

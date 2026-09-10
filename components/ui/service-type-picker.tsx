@@ -1,14 +1,6 @@
 "use client";
-import { Layers3, Package, Wrench, Zap, ClipboardCheck, Truck } from "lucide-react";
-
-const SERVICE_CONFIG = [
-  { value: "Heavy Stacking", label: "Heavy Stacking", Icon: Layers3 },
-  { value: "Light Stacking", label: "Light Stacking", Icon: Package },
-  { value: "Maintenance Access", label: "Maintenance", Icon: Wrench },
-  { value: "Charging", label: "Charging", Icon: Zap },
-  { value: "Inspection", label: "Inspection", Icon: ClipboardCheck },
-  { value: "Loading", label: "Loading", Icon: Truck },
-] as const;
+import { useEffect, useState } from "react";
+import { getActivityCategories, type ActivityCategory } from "@/lib/services/management";
 
 interface Props {
   value: string;
@@ -17,18 +9,35 @@ interface Props {
 }
 
 export function ServiceTypePicker({ value, onChange, allowedValues }: Props) {
+  const [categories, setCategories] = useState<ActivityCategory[]>([]);
+
+  useEffect(() => {
+    getActivityCategories()
+      .then(setCategories)
+      .catch(() => setCategories([]));
+  }, []);
+
   const visible = allowedValues
-    ? SERVICE_CONFIG.filter((s) => allowedValues.includes(s.value))
-    : SERVICE_CONFIG;
+    ? categories.filter((c) => allowedValues.includes(c.name))
+    : categories;
+
+  if (visible.length === 0) {
+    return (
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 12, color: "#aaa" }}>Memuat kategori...</span>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-      {visible.map(({ value: v, label, Icon }) => {
-        const active = value === v;
+      {visible.map((cat) => {
+        const active = value === cat.name;
         return (
           <button
-            key={v}
+            key={cat.id}
             type="button"
-            onClick={() => onChange(v)}
+            onClick={() => onChange(cat.name)}
             style={{
               display: "flex",
               flexDirection: "column",
@@ -39,30 +48,35 @@ export function ServiceTypePicker({ value, onChange, allowedValues }: Props) {
               height: 72,
               borderRadius: 10,
               border: active ? "1.5px solid #DA0037" : "1px solid rgba(195,198,215,0.5)",
-              background: active ? "#EDEDED" : "#EDEDED",
+              background: "#EDEDED",
               cursor: "pointer",
               fontFamily: "inherit",
               transition: "all 0.15s ease",
               flexShrink: 0,
             }}
             onMouseEnter={(e) => {
-              if (!active) {
-                (e.currentTarget as HTMLButtonElement).style.background = "#EDEDED";
-                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(218,0,55,0.3)";
-              }
+              if (!active) (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(218,0,55,0.3)";
             }}
             onMouseLeave={(e) => {
-              if (!active) {
-                (e.currentTarget as HTMLButtonElement).style.background = "#EDEDED";
-                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(195,198,215,0.5)";
-              }
+              if (!active) (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(195,198,215,0.5)";
             }}
           >
-            <Icon
-              size={20}
-              strokeWidth={1.8}
-              style={{ color: active ? "#DA0037" : "#777777" }}
-            />
+            {cat.icon_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={cat.icon_url}
+                alt={cat.name}
+                style={{
+                  width: 22,
+                  height: 22,
+                  objectFit: "contain",
+                  filter: active ? "none" : "grayscale(40%)",
+                  opacity: active ? 1 : 0.7,
+                }}
+              />
+            ) : (
+              <span style={{ fontSize: 18, lineHeight: 1 }}>⚡</span>
+            )}
             <span
               style={{
                 fontSize: 10,
@@ -73,7 +87,7 @@ export function ServiceTypePicker({ value, onChange, allowedValues }: Props) {
                 paddingInline: 4,
               }}
             >
-              {label}
+              {cat.name}
             </span>
           </button>
         );
@@ -81,5 +95,3 @@ export function ServiceTypePicker({ value, onChange, allowedValues }: Props) {
     </div>
   );
 }
-
-export const SERVICE_TYPE_VALUES = SERVICE_CONFIG.map((s) => s.value);

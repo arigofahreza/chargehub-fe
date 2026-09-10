@@ -13,6 +13,8 @@ interface EmployeeFilterSlice {
 interface ActivityFilterSlice {
   serviceType: string;
   vehicleId: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 interface FilterStore {
@@ -37,5 +39,5 @@ export const useFilterStore = create<FilterStore>((set) => ({
   setActivityFilter: (f) =>
     set((s) => ({ activityFilter: { ...s.activityFilter, ...f } })),
   clearActivityFilters: () =>
-    set({ activityFilter: { serviceType: "all", vehicleId: "all" } }),
+    set({ activityFilter: { serviceType: "all", vehicleId: "all", dateFrom: undefined, dateTo: undefined } }),
 }));

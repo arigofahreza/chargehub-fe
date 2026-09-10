@@ -12,10 +12,10 @@ interface Props {
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return `${mins} mnt lalu`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  if (hrs < 24) return `${hrs} jam lalu`;
+  return `${Math.floor(hrs / 24)} hari lalu`;
 }
 
 export function LastActivityFeed({ logs, onRefresh }: Props) {
@@ -49,7 +49,7 @@ export function LastActivityFeed({ logs, onRefresh }: Props) {
     >
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontWeight: 600, fontSize: 15, color: "#171717" }}>Last Activity</span>
+        <span style={{ fontWeight: 600, fontSize: 15, color: "#171717" }}>Aktivitas Terakhir</span>
         <button
           onClick={handleRefresh}
           disabled={refreshing}
@@ -76,7 +76,7 @@ export function LastActivityFeed({ logs, onRefresh }: Props) {
               animation: refreshing ? "spin 0.6s linear infinite" : "none",
             }}
           />
-          <span>Refresh</span>
+          <span>Perbarui</span>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </button>
       </div>
@@ -84,7 +84,7 @@ export function LastActivityFeed({ logs, onRefresh }: Props) {
       {/* Items */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1, overflowY: "auto" }}>
         {items.length === 0 ? (
-          <span style={{ fontSize: 12, color: "#9CA3AF" }}>No recent activity</span>
+          <span style={{ fontSize: 12, color: "#9CA3AF" }}>Belum ada aktivitas</span>
         ) : (
           items.map((log, i) => (
             <div key={log.id}>
@@ -94,7 +94,7 @@ export function LastActivityFeed({ logs, onRefresh }: Props) {
                     {log.serviceType}
                   </span>
                   <span style={{ fontSize: 12, color: "#777777" }}>
-                    {log.vehicleName} Â· {log.driver}
+                    {log.vehicleName} - {log.driver}
                   </span>
                 </div>
                 <span style={{ fontSize: 11, color: "#9CA3AF", flexShrink: 0 }}>
@@ -124,7 +124,7 @@ export function LastActivityFeed({ logs, onRefresh }: Props) {
           cursor: "pointer",
         }}
       >
-        Full Fleet Report
+        Lihat Semua Aktivitas
       </button>
     </div>
   );

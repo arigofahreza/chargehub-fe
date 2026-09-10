@@ -1,10 +1,9 @@
-"use client";
+﻿"use client";
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SelectDropdown } from "@/components/ui/select-dropdown";
-import MultipleSelector, { Option } from "@/components/ui/multiselect";
-import { NotificationTemplate, Employee } from "@/lib/types";
+import { NotificationTemplate } from "@/lib/types";
 import { sheetVariants, sheetOverlayVariants } from "@/lib/motion";
 import { X } from "lucide-react";
 
@@ -14,7 +13,6 @@ interface Props {
   initial?: Partial<NotificationTemplate>;
   onSubmit: (data: Partial<NotificationTemplate>) => Promise<void>;
   mode: "add" | "edit";
-  employees: Employee[];
 }
 
 const labelStyle: React.CSSProperties = {
@@ -42,32 +40,38 @@ function PhonePreview({ message }: { message: string }) {
   const hasMessage = message.trim().length > 0;
   return (
     <div style={{ width: 240, margin: "0 auto", borderRadius: 28, background: "#1C1C1E", boxShadow: "0 0 0 3px #3A3A3C, 0 8px 24px rgba(0,0,0,0.15)", padding: 10, boxSizing: "border-box", display: "flex", flexDirection: "column", height: 340 }}>
-      <div style={{ borderRadius: 20, overflow: "hidden", background: "#EFEAE2", display: "flex", flexDirection: "column", flex: 1 }}>
-        <div style={{ background: "#075E54", padding: "10px 12px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+      <div style={{ borderRadius: 20, overflow: "hidden", background: "#F0F2F5", display: "flex", flexDirection: "column", flex: 1 }}>
+        {/* Telegram header */}
+        <div style={{ background: "#2AABEE", padding: "10px 12px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <div style={{ width: 26, height: 26, borderRadius: 9999, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="white" />
-              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.121.555 4.112 1.528 5.835L.057 23.854a.5.5 0 00.608.608l6.019-1.471A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.887 0-3.663-.491-5.204-1.351l-.373-.214-3.871.945.964-3.871-.228-.38A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" fill="white" />
+            {/* Telegram paper plane icon */}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+              <path d="M22.265 2.428a1.5 1.5 0 00-1.595-.324L2.042 9.122a1.5 1.5 0 00.093 2.817l4.461 1.416 2.177 6.534a1.5 1.5 0 002.557.47l2.54-2.977 4.984 3.738a1.5 1.5 0 002.332-1.01l2.813-16.085a1.5 1.5 0 00-.734-1.597zM9.19 13.987l-.894 3.573-1.47-4.41 8.654-5.771-6.29 6.608zm9.775 4.506l-4.988-3.741 3.417-3.593-2.61 6.878.181.456z"/>
             </svg>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#fff" }}>ChargeHub Alerts</span>
-            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.8)" }}>Official Business Account</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#fff" }}>AMEV Alerts</span>
+            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.85)" }}>bot</span>
           </div>
         </div>
-        <div style={{ flex: 1, minHeight: 100, padding: "14px 10px", display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 8, overflowY: "auto" }}>
+
+        {/* Chat area */}
+        <div style={{ flex: 1, minHeight: 100, padding: "14px 10px", display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 8, overflowY: "auto", background: "#F0F2F5" }}>
           {!hasMessage && (
-            <div style={{ alignSelf: "flex-start", background: "#fff", borderRadius: "12px 12px 12px 2px", padding: "10px 12px", display: "flex", gap: 4, boxShadow: "0 1px 1px rgba(0,0,0,0.1)" }}>
+            <div style={{ alignSelf: "flex-start", background: "#fff", borderRadius: "12px 12px 12px 2px", padding: "10px 12px", display: "flex", gap: 4, boxShadow: "0 1px 2px rgba(0,0,0,0.12)" }}>
               <span className="typing-dot" style={{ width: 6, height: 6, borderRadius: 9999, background: "#9CA3AF", display: "block" }} />
               <span className="typing-dot" style={{ width: 6, height: 6, borderRadius: 9999, background: "#9CA3AF", display: "block" }} />
               <span className="typing-dot" style={{ width: 6, height: 6, borderRadius: 9999, background: "#9CA3AF", display: "block" }} />
             </div>
           )}
           {hasMessage && (
-            <div style={{ alignSelf: "flex-start", maxWidth: "85%", background: "#fff", borderRadius: "12px 12px 12px 2px", padding: "8px 10px", boxShadow: "0 1px 1px rgba(0,0,0,0.1)" }}>
-              <span style={{ fontSize: 12, lineHeight: "17px", color: "#111B21", whiteSpace: "pre-wrap" }}>{message}</span>
-              <div style={{ textAlign: "right", marginTop: 2 }}>
-                <span style={{ fontSize: 9, color: "#8696A0" }}>now âœ“âœ“</span>
+            <div style={{ alignSelf: "flex-start", maxWidth: "88%", background: "#fff", borderRadius: "12px 12px 12px 2px", padding: "8px 10px", boxShadow: "0 1px 2px rgba(0,0,0,0.12)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#2AABEE" }}>AMEV Alerts</span>
+              </div>
+              <span style={{ fontSize: 12, lineHeight: "17px", color: "#111", whiteSpace: "pre-wrap" }}>{message}</span>
+              <div style={{ textAlign: "right", marginTop: 3 }}>
+                <span style={{ fontSize: 9, color: "#8B8B8B" }}>now ✓✓</span>
               </div>
             </div>
           )}
@@ -77,18 +81,16 @@ function PhonePreview({ message }: { message: string }) {
   );
 }
 
-export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode, employees }: Props) {
+export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode }: Props) {
   const [isMobile, setIsMobile] = useState(false);
   const [form, setForm] = useState<Partial<NotificationTemplate>>(
     initial ?? {
       name: "",
       message: "",
       status: "active",
-      employeeCount: 0,
       phoneCount: 0,
       lastSent: new Date().toISOString(),
       category: "General",
-      recipientIds: [],
     }
   );
   const [saving, setSaving] = useState(false);
@@ -107,11 +109,9 @@ export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode,
           name: "",
           message: "",
           status: "active",
-          employeeCount: 0,
           phoneCount: 0,
           lastSent: new Date().toISOString(),
           category: "General",
-          recipientIds: [],
         }
       );
     }
@@ -124,14 +124,6 @@ export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode,
   }, [open]);
 
   const charCount = (form.message ?? "").length;
-  const recipientIds = form.recipientIds ?? [];
-
-  const employeeOptions: Option[] = employees.map((e) => ({ value: e.id, label: e.name }));
-  const selectedOptions: Option[] = employeeOptions.filter((o) => recipientIds.includes(o.value));
-
-  function handleRecipientsChange(opts: Option[]) {
-    setForm((f) => ({ ...f, recipientIds: opts.map((o) => o.value) }));
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -144,43 +136,21 @@ export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode,
     }
   }
 
-  const title = mode === "add" ? "Create Template" : "Edit Template";
-
-  const recipientPicker = (
-    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <label style={labelStyle}>Recipients</label>
-        {recipientIds.length > 0 && (
-          <span style={{ fontSize: 11, fontWeight: 600, color: "#DA0037" }}>
-            {recipientIds.length} selected
-          </span>
-        )}
-      </div>
-      <MultipleSelector
-        value={selectedOptions}
-        options={employeeOptions}
-        onChange={handleRecipientsChange}
-        placeholder="Select employees..."
-        hidePlaceholderWhenSelected
-        hideClearAllButton={false}
-        emptyIndicator={<p className="text-center text-sm text-[#9CA3AF]">No employees found</p>}
-      />
-    </div>
-  );
+  const title = mode === "add" ? "Buat Template" : "Edit Template";
 
   const formFields = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        <label style={labelStyle}>Template Name</label>
+        <label style={labelStyle}>Nama Template</label>
         <input
           value={form.name ?? ""}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-          placeholder="e.g. Low Battery Alert"
+          placeholder="cth. Peringatan Baterai Lemah"
           style={inputStyle}
         />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        <label style={labelStyle}>Message Body</label>
+        <label style={labelStyle}>Isi Pesan</label>
         <textarea
           value={form.message ?? ""}
           onChange={(e) => {
@@ -188,7 +158,7 @@ export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode,
               setForm((f) => ({ ...f, message: e.target.value }));
             }
           }}
-          placeholder="Type your WhatsApp message here..."
+          placeholder="Ketik pesan WhatsApp di sini..."
           rows={4}
           style={{ borderRadius: 10, background: "#fff", border: "1px solid #DEDEDE", padding: "10px 12px", fontSize: 14, fontFamily: "inherit", color: "#171717", resize: "none", outline: "none", width: "100%" }}
         />
@@ -196,16 +166,16 @@ export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode,
       </div>
       <div style={{ display: "flex", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
-          <label style={labelStyle}>Category</label>
+          <label style={labelStyle}>Kategori</label>
           <SelectDropdown
             value={form.category ?? "General"}
             onChange={(val) => setForm((f) => ({ ...f, category: val }))}
             options={[
-              { value: "General", label: "General" },
-              { value: "Alert", label: "Alert" },
-              { value: "Reminder", label: "Reminder" },
-              { value: "Maintenance", label: "Maintenance" },
-              { value: "Report", label: "Report" },
+              { value: "General", label: "Umum" },
+              { value: "Alert", label: "Peringatan" },
+              { value: "Reminder", label: "Pengingat" },
+              { value: "Maintenance", label: "Perawatan" },
+              { value: "Report", label: "Laporan" },
             ]}
             style={inputStyle}
           />
@@ -216,14 +186,13 @@ export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode,
             value={form.status ?? "active"}
             onChange={(val) => setForm((f) => ({ ...f, status: val as NotificationTemplate["status"] }))}
             options={[
-              { value: "active", label: "Active" },
-              { value: "inactive", label: "Draft" },
+              { value: "active", label: "Aktif" },
+              { value: "inactive", label: "Draf" },
             ]}
             style={inputStyle}
           />
         </div>
       </div>
-      {recipientPicker}
     </div>
   );
 
@@ -260,12 +229,12 @@ export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode,
               <div style={{ maxHeight: "56vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 14 }}>
                 {formFields}
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <span style={labelStyle}>Live Preview</span>
+                  <span style={labelStyle}>Pratinjau Langsung</span>
                   <PhonePreview message={form.message ?? ""} />
                 </div>
               </div>
               <button type="submit" disabled={saving} style={{ height: 48, borderRadius: 12, background: "#DA0037", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving ? 0.7 : 1, flexShrink: 0 }}>
-                {saving ? "Saving..." : "Save Template"}
+                {saving ? "Menyimpan..." : "Simpan Template"}
               </button>
             </form>
           </motion.div>
@@ -292,12 +261,12 @@ export function TemplateFormModal({ open, onOpenChange, initial, onSubmit, mode,
               {formFields}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <span style={labelStyle}>Live Preview</span>
+              <span style={labelStyle}>Pratinjau Langsung</span>
               <PhonePreview message={form.message ?? ""} />
             </div>
           </div>
           <button type="submit" disabled={saving} style={{ height: 48, borderRadius: 12, background: "#DA0037", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving ? 0.7 : 1 }}>
-            {saving ? "Saving..." : "Save Template"}
+            {saving ? "Menyimpan..." : "Simpan Template"}
           </button>
         </form>
       </DialogContent>

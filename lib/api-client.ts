@@ -39,7 +39,37 @@ export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body: unknown) =>
     request<T>(path, { method: "POST", body: JSON.stringify(body) }),
+  postForm: <T>(path: string, body: FormData) => {
+    const token = getToken();
+    const url = `${API_BASE}${path}`;
+    return fetch(url, {
+      method: "POST",
+      body,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    }).then(async (res) => {
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`API ${res.status}: ${text}`);
+      }
+      return res.json() as Promise<T>;
+    });
+  },
   patch: <T>(path: string, body: unknown) =>
     request<T>(path, { method: "PATCH", body: JSON.stringify(body) }),
+  patchForm: <T>(path: string, body: FormData) => {
+    const token = getToken();
+    const url = `${API_BASE}${path}`;
+    return fetch(url, {
+      method: "PATCH",
+      body,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    }).then(async (res) => {
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`API ${res.status}: ${text}`);
+      }
+      return res.json() as Promise<T>;
+    });
+  },
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };

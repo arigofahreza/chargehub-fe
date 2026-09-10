@@ -31,7 +31,6 @@ export interface RangeValue {
   end: Date;
 }
 
-// â”€â”€â”€ Icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const ClockIcon = () => (
   <svg height="14" viewBox="0 0 16 16" width="14" fill="none" style={{ flexShrink: 0 }}>
@@ -102,7 +101,6 @@ const ClearIcon = () => (
   </svg>
 );
 
-// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const filterPresets = (
   obj: Record<string, { text: string; start: Date; end: Date }>,
@@ -154,7 +152,6 @@ const formatDateRange = (start: Date, end: Date, timezone: string) => {
 
 const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-// â”€â”€â”€ CalendarCombobox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface CalendarComboboxProps {
   value: RangeValue | null;

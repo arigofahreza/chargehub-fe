@@ -33,10 +33,10 @@ export function TopEnergyList({ items }: Props) {
       }}
     >
       <span style={{ fontWeight: 600, fontSize: 15, color: "#171717" }}>
-        Top Energy Consumption
+        Konsumsi Energi Tertinggi
       </span>
       {sorted.length === 0 ? (
-        <span style={{ fontSize: 12, color: "#9CA3AF" }}>No data for selected period</span>
+        <span style={{ fontSize: 12, color: "#9CA3AF" }}>Tidak ada data untuk periode ini</span>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {sorted.map((v, i) => (

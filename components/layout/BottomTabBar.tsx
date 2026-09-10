@@ -2,13 +2,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { useAuthStore } from "@/stores/useAuthStore";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const allTabs = [
   {
     href: "/dashboard",
-    label: "Dashboard",
-    adminOnly: false,
+    label: "Beranda",
+    managementOnly: false,
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <rect x="2" y="2" width="9" height="9" rx="2" fill="currentColor" opacity="0.9" />
@@ -20,8 +20,8 @@ const allTabs = [
   },
   {
     href: "/vehicles",
-    label: "Vehicles",
-    adminOnly: false,
+    label: "Kendaraan",
+    managementOnly: false,
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 20" fill="none">
         <path d="M3 15L5 8H19L21 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -32,8 +32,8 @@ const allTabs = [
   },
   {
     href: "/employees",
-    label: "Employees",
-    adminOnly: true,
+    label: "Karyawan",
+    managementOnly: false,
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.8" />
@@ -45,8 +45,8 @@ const allTabs = [
   },
   {
     href: "/notifications",
-    label: "Notifications",
-    adminOnly: true,
+    label: "Notifikasi",
+    managementOnly: false,
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <path d="M6 10C6 6.5 8.5 4 12 4C15.5 4 18 6.5 18 10V14L20 17H4L6 14V10Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
@@ -56,8 +56,8 @@ const allTabs = [
   },
   {
     href: "/activity",
-    label: "Activity",
-    adminOnly: false,
+    label: "Aktivitas",
+    managementOnly: false,
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
@@ -67,13 +67,23 @@ const allTabs = [
       </svg>
     ),
   },
+  {
+    href: "/manajemen",
+    label: "Manajemen",
+    managementOnly: true,
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" strokeWidth="1.8" />
+      </svg>
+    ),
+  },
 ];
 
 export function BottomTabBar() {
   const pathname = usePathname();
-  const user = useAuthStore((s) => s.user);
-  const isAdmin = user?.role === "admin";
-  const tabs = allTabs.filter((tab) => !tab.adminOnly || isAdmin);
+  const perms = usePermissions();
+  const tabs = allTabs.filter((tab) => !tab.managementOnly || perms.canAccessManagement);
 
   return (
     <div

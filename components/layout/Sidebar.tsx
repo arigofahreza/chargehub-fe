@@ -9,20 +9,24 @@ import {
   Users,
   Bell,
   ClipboardList,
+  Settings,
   LogOut,
   UserCircle,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { usePermissions } from "@/hooks/usePermissions";
+import { getRoleLabel } from "@/lib/rbac";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 
 const allNavItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, adminOnly: false },
-  { href: "/vehicles", label: "Vehicles", icon: Car, adminOnly: false },
-  { href: "/employees", label: "Employees", icon: Users, adminOnly: true },
-  { href: "/notifications", label: "Notifications", icon: Bell, adminOnly: true },
-  { href: "/activity", label: "Activity", icon: ClipboardList, adminOnly: false },
+  { href: "/dashboard", label: "Beranda", icon: LayoutDashboard, managementOnly: false },
+  { href: "/vehicles", label: "Kendaraan", icon: Car, managementOnly: false },
+  { href: "/employees", label: "Karyawan", icon: Users, managementOnly: false },
+  { href: "/notifications", label: "Notifikasi", icon: Bell, managementOnly: false },
+  { href: "/activity", label: "Aktivitas", icon: ClipboardList, managementOnly: false },
+  { href: "/manajemen", label: "Manajemen", icon: Settings, managementOnly: true },
 ];
 
 export function Sidebar() {
@@ -30,8 +34,11 @@ export function Sidebar() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const isAdmin = user?.role === "admin";
-  const navItems = allNavItems.filter((item) => !item.adminOnly || isAdmin);
+  const perms = usePermissions();
+
+  const navItems = allNavItems.filter(
+    (item) => !item.managementOnly || perms.canAccessManagement
+  );
 
   const initials = user?.fullName
     ? user.fullName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
@@ -56,9 +63,14 @@ export function Sidebar() {
           height={40}
           className="object-contain flex-shrink-0"
         />
-        <span style={{ fontSize: 22, fontWeight: 800, color: "var(--color-ink)", letterSpacing: "-0.5px" }}>
-          AMEV
-        </span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          <span style={{ fontSize: 22, fontWeight: 800, color: "var(--color-ink)", letterSpacing: "-0.5px", lineHeight: 1.1 }}>
+            AMEV
+          </span>
+          <span style={{ fontSize: 9, fontWeight: 500, color: "var(--color-muted-text)", letterSpacing: "0.3px", lineHeight: 1.3 }}>
+            Antareja Monitoring EV
+          </span>
+        </div>
       </div>
 
       {/* Nav */}
@@ -112,7 +124,7 @@ export function Sidebar() {
                 {user?.fullName || user?.username || "User"}
               </p>
               <p className="text-xs truncate" style={{ color: "var(--color-muted-text)" }}>
-                {user?.role === "admin" ? "Admin" : "Operator"}
+                {getRoleLabel(user?.role)}
               </p>
             </div>
           </PopoverTrigger>
@@ -127,7 +139,7 @@ export function Sidebar() {
                 {user?.fullName || user?.username || "User"}
               </p>
               <p className="text-xs" style={{ color: "var(--color-muted-text)" }}>
-                {user?.role === "admin" ? "Admin" : "Operator"}
+                {getRoleLabel(user?.role)}
               </p>
             </div>
             <Separator className="my-1" />
@@ -137,7 +149,7 @@ export function Sidebar() {
               style={{ color: "var(--color-body)" }}
             >
               <UserCircle className="h-4 w-4" style={{ color: "var(--color-muted-text)" }} />
-              My Profile
+              Profil Saya
             </Link>
             <Separator className="my-1" />
             <button
@@ -146,7 +158,7 @@ export function Sidebar() {
               style={{ color: "var(--color-error)", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit" }}
             >
               <LogOut className="h-4 w-4" />
-              Logout
+              Keluar
             </button>
           </PopoverContent>
         </Popover>

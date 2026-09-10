@@ -6,10 +6,10 @@ interface Props {
 }
 
 const metrics = [
-  { key: "status" as keyof Vehicle, label: "STATUS", format: (v: string) => v === "idle" ? "Idle" : v === "working" ? "Working" : "Charging" },
+  { key: "status" as keyof Vehicle, label: "STATUS", format: (v: string) => v === "idle" ? "Siap" : v === "working" ? "Beroperasi" : "Mengisi" },
   { key: "batteryPercent" as keyof Vehicle, label: "BATERAI", format: (v: number) => `${v}%` },
   { key: "operatingTime" as keyof Vehicle, label: "OPERASI", format: (v: number) => `${v} jam` },
-  { key: "fleetId" as keyof Vehicle, label: "FLEET ID", format: (v: string) => v || "-" },
+  { key: "fleetId" as keyof Vehicle, label: "ID ARMADA", format: (v: string) => v || "-" },
 ];
 
 function SkeletonBlock({ w, h, radius = 6 }: { w: string | number; h: number; radius?: number }) {
@@ -97,9 +97,9 @@ export function SelectedVehicleCard({ vehicle }: Props) {
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#171717" }}>Select a vehicle</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#171717" }}>Pilih kendaraan</span>
               <span style={{ fontSize: 11, color: "#777777", textAlign: "center" }}>
-                Use the filter above to choose a specific vehicle
+                Gunakan filter di atas untuk memilih kendaraan tertentu
               </span>
             </div>
           </div>
@@ -128,9 +128,9 @@ export function SelectedVehicleCard({ vehicle }: Props) {
           </svg>
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontWeight: 600, fontSize: 15, color: "#171717" }}>Selected Vehicle</span>
+          <span style={{ fontWeight: 600, fontSize: 15, color: "#171717" }}>Kendaraan Dipilih</span>
           <span style={{ fontSize: 11, color: "#444444" }}>
-            {vehicle.name} Â· {vehicle.fleetId}
+            {vehicle.name} - {vehicle.fleetId}
           </span>
         </div>
       </div>

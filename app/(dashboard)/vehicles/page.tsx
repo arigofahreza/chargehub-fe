@@ -10,10 +10,12 @@ import { useFilterStore } from "@/stores/useFilterStore";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Vehicle } from "@/lib/types";
 import { Wave } from "@/components/ui/wave";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const PAGE_SIZE = 8;
 
 export default function VehiclesPage() {
+  const perms = usePermissions();
   const { vehicleFilter } = useFilterStore();
   const debouncedSearch = useDebounce(vehicleFilter.search ?? "", 300);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -59,27 +61,29 @@ export default function VehiclesPage() {
         <div className="flex flex-col gap-3">
           <div className="flex items-start justify-between">
             <div>
-              <h1 style={{ fontWeight: 700, fontSize: 22, color: "#171717", letterSpacing: "-0.4px" }}>Vehicle Management</h1>
-              <p style={{ fontSize: 13, color: "#444444" }}>Monitor fleet status &amp; assignments.</p>
+              <h1 style={{ fontWeight: 700, fontSize: 22, color: "#171717", letterSpacing: "-0.4px" }}>Manajemen Kendaraan</h1>
+              <p style={{ fontSize: 13, color: "#444444" }}>Pantau status armada &amp; penugasan.</p>
             </div>
-            <button
-              onClick={() => setAddOpen(true)}
-              className="flex items-center gap-1.5 flex-shrink-0"
-              style={{
-                background: "#DA0037",
-                border: "none",
-                borderRadius: 10,
-                color: "#fff",
-                fontSize: 11,
-                fontWeight: 600,
-                padding: "9px 14px",
-                fontFamily: "inherit",
-                cursor: "pointer",
-              }}
-            >
-              <span style={{ fontSize: 14, lineHeight: 1 }}>+</span>
-              Add Vehicle
-            </button>
+            {perms.canWriteVehicles && (
+              <button
+                onClick={() => setAddOpen(true)}
+                className="flex items-center gap-1.5 flex-shrink-0"
+                style={{
+                  background: "#DA0037",
+                  border: "none",
+                  borderRadius: 10,
+                  color: "#fff",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  padding: "9px 14px",
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                }}
+              >
+                <span style={{ fontSize: 14, lineHeight: 1 }}>+</span>
+                Tambah Kendaraan
+              </button>
+            )}
           </div>
           <VehicleFilters />
         </div>
@@ -87,17 +91,17 @@ export default function VehiclesPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <Wave className="size-16 text-[#DA0037]" />
-            <p className="text-sm" style={{ color: "var(--color-muted-text)" }}>Loading vehicles...</p>
+            <p className="text-sm" style={{ color: "var(--color-muted-text)" }}>Memuat kendaraan...</p>
           </div>
         ) : (
           <>
             <p className="text-xs" style={{ color: "var(--color-muted-text)" }}>
-              {vehicles.length} vehicle{vehicles.length !== 1 ? "s" : ""} found
+              {vehicles.length} kendaraan ditemukan
             </p>
 
             {paged.length === 0 ? (
               <div className="text-center py-20" style={{ color: "var(--color-muted-text)" }}>
-                No vehicles match your filters.
+                Tidak ada kendaraan yang sesuai filter.
               </div>
             ) : (
               <motion.div
@@ -109,7 +113,11 @@ export default function VehiclesPage() {
               >
                 {paged.map((v) => (
                   <motion.div key={v.id} variants={fadeUpVariants}>
-                    <VehicleCard vehicle={v} onEdit={() => openEdit(v)} onDelete={() => handleDeleteVehicle(v.id)} />
+                    <VehicleCard
+                      vehicle={v}
+                      onEdit={perms.canWriteVehicles ? () => openEdit(v) : undefined}
+                      onDelete={perms.canWriteVehicles ? () => handleDeleteVehicle(v.id) : undefined}
+                    />
                   </motion.div>
                 ))}
               </motion.div>
@@ -129,7 +137,7 @@ export default function VehiclesPage() {
                 color: "var(--color-body)",
               }}
             >
-              ← Prev
+              ← Sebelumnya
             </button>
             <span className="text-xs" style={{ color: "var(--color-muted-text)" }}>
               {page} / {totalPages}
@@ -144,7 +152,7 @@ export default function VehiclesPage() {
                 color: "var(--color-body)",
               }}
             >
-              Next →
+              Selanjutnya →
             </button>
           </div>
         )}

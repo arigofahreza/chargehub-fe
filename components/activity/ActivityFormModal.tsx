@@ -10,6 +10,7 @@ import { X } from "lucide-react";
 import { predictBattery } from "@/lib/services/prediction";
 import { ServiceTypePicker } from "@/components/ui/service-type-picker";
 import { getAvgDuration } from "@/lib/services/activity";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Props {
   open: boolean;
@@ -18,7 +19,8 @@ interface Props {
   onSubmit: (data: Partial<ActivityLog>) => Promise<void>;
   mode: "add" | "edit";
   vehicleOptions: { id: string; name: string; unitId: string; batteryPercent?: number; batteryCapacityKwh?: number; degradationRatePct?: number; vehicleType?: string }[];
-  driverOptions: { value: string; label: string }[];
+  supervisorOptions: { value: string; label: string }[];
+  driverOptions: { value: string; label: string; jobTitle: string }[];
 }
 
 interface Recommendation {
@@ -46,11 +48,10 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
 };
 
-const SERVICE_TYPES = ["Heavy Stacking", "Light Stacking", "Maintenance Access", "Charging", "Inspection", "Loading"];
-
 const ACTIVITY_MAP: Record<string, string> = {
   "Heavy Stacking": "heavy_stacking",
   "Light Stacking": "light_stacking",
+  "General Activity": "inspection",
   "Inspection": "inspection",
   "Maintenance Access": "inspection",
   "Loading": "loading",
@@ -58,27 +59,36 @@ const ACTIVITY_MAP: Record<string, string> = {
 
 const EKSKAVATOR_SERVICES = ["Loading", "Charging"];
 
-function getAllowedServices(vehicleType?: string): string[] {
-  if (vehicleType === "Ekskavator") return EKSKAVATOR_SERVICES;
-  return SERVICE_TYPES;
+const VEHICLE_TYPE_DRIVER_JOB_TITLE: Record<string, string> = {
+  "wheel loader": "Operator Wheel Loader",
+  "ekskavator": "Operator Ekskavator",
+};
+
+function getAllowedServices(vehicleType?: string): string[] | null {
+  if (vehicleType?.toLowerCase() === "ekskavator") return EKSKAVATOR_SERVICES;
+  return null;
 }
 
 const BASELINE_DEGRADATION = 2.0;
 
+function toLocalISOString(date: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 function deriveShift(dateTimeStr: string): "shift_1" | "shift_2" {
   const d = new Date(dateTimeStr);
   const totalMin = d.getHours() * 60 + d.getMinutes();
-  // Shift 1: 06:50â€“18:49 (410â€“1129 min), Shift 2: 18:50â€“06:49
   return totalMin >= 410 && totalMin < 1130 ? "shift_1" : "shift_2";
 }
 
 function applyDegradation(batteryBefore: number, predictedAfter: number, currentRate: number): number {
   const rawDrain = batteryBefore - predictedAfter;
-  const scaledDrain = rawDrain * (currentRate / BASELINE_DEGRADATION);
+  const scaledDrain = rawDrain * (currentRate / BASELINE_DEGRADATION);  
   return Math.max(0, Math.min(100, batteryBefore - scaledDrain));
 }
 
-export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode, vehicleOptions, driverOptions }: Props) {
+export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode, vehicleOptions, supervisorOptions, driverOptions }: Props) {
   const [isMobile, setIsMobile] = useState(false);
   const [form, setForm] = useState<Partial<ActivityLog>>(
     initial ?? {
@@ -98,6 +108,7 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
   const [predicting, setPredicting] = useState(false);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loadingRecs, setLoadingRecs] = useState(false);
+  const perms = usePermissions();
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -112,11 +123,31 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
       setPrediction(null);
       setLastAvgDuration(undefined);
       setRecommendations([]);
+      setForm(
+        initial ?? {
+          dateTime: toLocalISOString(new Date()),
+          vehicleId: "",
+          vehicleName: "",
+          unitId: "",
+          serviceType: "Charging",
+          supervisor: "",
+          driver: "",
+          status: "pending",
+          createdBy: "Admin",
+        }
+      );
     } else {
       document.body.style.overflow = "";
     }
     return () => { document.body.style.overflow = ""; };
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (perms.allowedServiceTypes && form.serviceType && !perms.allowedServiceTypes.includes(form.serviceType)) {
+      setForm((f) => ({ ...f, serviceType: perms.allowedServiceTypes![0] ?? "Charging" }));
+    }
+  }, [open, perms.allowedServiceTypes]);
 
   useEffect(() => {
     const activity = ACTIVITY_MAP[form.serviceType ?? ""];
@@ -199,13 +230,19 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
   function handleVehicleChange(vehicleId: string) {
     const v = vehicleOptions.find((o) => o.id === vehicleId);
     const allowed = getAllowedServices(v?.vehicleType);
-    setForm((f) => ({
-      ...f,
-      vehicleId,
-      vehicleName: v?.name ?? "",
-      unitId: v?.unitId ?? "",
-      serviceType: f.serviceType && allowed.includes(f.serviceType) ? f.serviceType : allowed[0],
-    }));
+    const requiredJobTitle = v?.vehicleType ? VEHICLE_TYPE_DRIVER_JOB_TITLE[v.vehicleType.toLowerCase()] : undefined;
+    setForm((f) => {
+      const driverStillValid = !requiredJobTitle ||
+        driverOptions.some((d) => d.value === f.driver && d.jobTitle === requiredJobTitle);
+      return {
+        ...f,
+        vehicleId,
+        vehicleName: v?.name ?? "",
+        unitId: v?.unitId ?? "",
+        serviceType: f.serviceType && allowed && allowed.includes(f.serviceType) ? f.serviceType : allowed ? allowed[0] : f.serviceType,
+        driver: driverStillValid ? f.driver : "",
+      };
+    });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -233,14 +270,29 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
     }
   }
 
-  const title = mode === "add" ? "New Log" : "Edit Log";
+  const title = mode === "add" ? "Buat Log" : "Edit Log";
+
+  const canSubmit = !!form.vehicleId && !!form.supervisor && !!form.driver;
 
   const selectedVehicle = vehicleOptions.find((v) => v.id === form.vehicleId);
-  const allowedServices = getAllowedServices(selectedVehicle?.vehicleType);
+  const vehicleAllowedServices = getAllowedServices(selectedVehicle?.vehicleType);
+  const requiredDriverJobTitle = selectedVehicle?.vehicleType
+    ? VEHICLE_TYPE_DRIVER_JOB_TITLE[selectedVehicle.vehicleType.toLowerCase()]
+    : undefined;
+  const filteredDriverOptions = requiredDriverJobTitle
+    ? driverOptions.filter((d) => d.jobTitle.toLowerCase() === requiredDriverJobTitle.toLowerCase())
+    : driverOptions;
+  // null = no restriction (show all from DB), string[] = whitelist
+  const allowedServices: string[] | undefined =
+    perms.allowedServiceTypes && vehicleAllowedServices
+      ? vehicleAllowedServices.filter((s) => perms.allowedServiceTypes!.includes(s))
+      : perms.allowedServiceTypes
+      ? perms.allowedServiceTypes
+      : vehicleAllowedServices ?? undefined;
 
   const serviceChips = (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label style={labelStyle}>Service Type</label>
+      <label style={labelStyle}>Tipe Aktivitas</label>
       <div style={{ overflowX: "auto", paddingBottom: 2 }}>
         <ServiceTypePicker
           value={form.serviceType ?? ""}
@@ -313,8 +365,8 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
             </svg>
           </div>
           <div>
-            <p style={{ fontSize: 13, fontWeight: 600, color: "#171717", margin: 0 }}>Activity Advisor</p>
-            <p style={{ fontSize: 10, color: "#777777", margin: 0 }}>AI-ranked by remaining battery</p>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#171717", margin: 0 }}>Penasihat Aktivitas</p>
+            <p style={{ fontSize: 10, color: "#777777", margin: 0 }}>Diurutkan AI berdasarkan sisa baterai</p>
           </div>
         </div>
       </div>
@@ -327,7 +379,7 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
             </svg>
             <p style={{ fontSize: 12, color: "#9CA3AF", textAlign: "center", margin: 0 }}>
-              Select vehicle, fill battery &amp; duration to see recommendations
+              Pilih kendaraan &amp; isi durasi untuk melihat rekomendasi
             </p>
           </div>
         )}
@@ -343,7 +395,7 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
 
         {!loadingRecs && hasRecInputs && recommendations.length === 0 && (
           <p style={{ fontSize: 12, color: "#9CA3AF", textAlign: "center", paddingTop: 20 }}>
-            Could not load recommendations. Check ML service.
+            Gagal memuat rekomendasi. Cek layanan ML.
           </p>
         )}
 
@@ -351,7 +403,7 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
           const pct = rec.predicted_after;
           const color = pct >= 40 ? "#00714D" : pct >= 20 ? "#B45309" : "#BA1A1A";
           const bg = pct >= 40 ? "rgba(0,113,77,0.07)" : pct >= 20 ? "rgba(180,83,9,0.07)" : "rgba(186,26,26,0.07)";
-          const icon = pct >= 40 ? "âœ“" : pct >= 20 ? "!" : "âœ•";
+          const icon = pct >= 40 ? "" : pct >= 20 ? "!" : "";
           const barWidth = Math.max(0, Math.min(100, pct));
           return (
             <div
@@ -386,19 +438,19 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
   const formBody = (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        <label style={labelStyle}>Date &amp; Time</label>
+        <label style={labelStyle}>Tanggal &amp; Waktu</label>
         <DateTimePicker
           value={form.dateTime ? new Date(form.dateTime) : null}
           onChange={(date) => setForm((f) => ({ ...f, dateTime: date?.toISOString() ?? "" }))}
         />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        <label style={labelStyle}>Vehicle Assignment</label>
+        <label style={labelStyle}>Penugasan Kendaraan <span style={{ color: "#DA0037" }}>*</span></label>
         <SelectDropdown
           value={form.vehicleId ?? ""}
           onChange={handleVehicleChange}
           options={[
-            { value: "", label: "Select vehicle..." },
+            { value: "", label: "Pilih kendaraan..." },
             ...vehicleOptions.map((v) => ({ value: v.id, label: `${v.name} - ${v.unitId}` })),
           ]}
           style={inputStyle}
@@ -406,13 +458,28 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
       </div>
       {serviceChips}
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        <label style={labelStyle}>Driver Name</label>
+        <label style={labelStyle}>Pengawas <span style={{ color: "#DA0037" }}>*</span></label>
         <SelectDropdown
-          value={form.driver ?? ""}
-          onChange={(val) => setForm((f) => ({ ...f, driver: val }))}
-          options={[{ value: "", label: "Select driver..." }, ...driverOptions]}
+          key="mobile-supervisor"
+          value={form.supervisor ?? ""}
+          onChange={(val) => setForm((f) => ({ ...f, supervisor: val }))}
+          options={[{ value: "", label: "Pilih pengawas..." }, ...supervisorOptions]}
           style={inputStyle}
         />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+        <label style={labelStyle}>Nama Pengemudi <span style={{ color: "#DA0037" }}>*</span></label>
+        <SelectDropdown
+          key="mobile-driver"
+          value={form.driver ?? ""}
+          onChange={(val) => setForm((f) => ({ ...f, driver: val }))}
+          options={[{ value: "", label: "Pilih pengemudi..." }, ...filteredDriverOptions]}
+          style={inputStyle}
+          disabled={!form.vehicleId}
+        />
+        {!form.vehicleId && (
+          <p style={{ fontSize: 11, color: "#9CA3AF", margin: 0 }}>Pilih kendaraan terlebih dahulu</p>
+        )}
       </div>
     </div>
   );
@@ -456,10 +523,10 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
               </div>
               <button
                 type="submit"
-                disabled={saving}
-                style={{ height: 48, borderRadius: 12, background: "#DA0037", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", opacity: saving ? 0.7 : 1, flexShrink: 0 }}
+                disabled={saving || !canSubmit}
+                style={{ height: 48, borderRadius: 12, background: "#DA0037", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: saving || !canSubmit ? "not-allowed" : "pointer", opacity: saving || !canSubmit ? 0.5 : 1, flexShrink: 0 }}
               >
-                {saving ? "Saving..." : mode === "add" ? "Create Log" : "Save Changes"}
+                {saving ? "Menyimpan..." : mode === "add" ? "Buat Log" : "Simpan Perubahan"}
               </button>
             </form>
           </motion.div>
@@ -501,22 +568,22 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
           {/* Left: form */}
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16, overflowY: "auto", paddingBottom: 4, paddingRight: 4 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: "#171717" }}>Basic Information</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "#171717" }}>Informasi Dasar</span>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  <label style={labelStyle}>Date &amp; Time</label>
+                  <label style={labelStyle}>Tanggal &amp; Waktu</label>
                   <DateTimePicker
                     value={form.dateTime ? new Date(form.dateTime) : null}
                     onChange={(date) => setForm((f) => ({ ...f, dateTime: date?.toISOString() ?? "" }))}
                   />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  <label style={labelStyle}>Vehicle Assignment</label>
+                  <label style={labelStyle}>Penugasan Kendaraan <span style={{ color: "#DA0037" }}>*</span></label>
                   <SelectDropdown
                     value={form.vehicleId ?? ""}
                     onChange={handleVehicleChange}
                     options={[
-                      { value: "", label: "Select vehicle..." },
+                      { value: "", label: "Pilih kendaraan..." },
                       ...vehicleOptions.map((v) => ({ value: v.id, label: `${v.name} - ${v.unitId}` })),
                     ]}
                     style={inputStyle}
@@ -528,9 +595,9 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
             <div style={{ height: 1, background: "#E5E7EB" }} />
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: "#171717" }}>Operational Details</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "#171717" }}>Detail Operasional</span>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <label style={labelStyle}>Service Type</label>
+                <label style={labelStyle}>Tipe Aktivitas</label>
                 <ServiceTypePicker
                   value={form.serviceType ?? ""}
                   onChange={(v) => setForm((f) => ({ ...f, serviceType: v }))}
@@ -538,13 +605,28 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
                 />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                <label style={labelStyle}>Driver Name</label>
+                <label style={labelStyle}>Pengawas <span style={{ color: "#DA0037" }}>*</span></label>
                 <SelectDropdown
-                  value={form.driver ?? ""}
-                  onChange={(val) => setForm((f) => ({ ...f, driver: val }))}
-                  options={[{ value: "", label: "Select driver..." }, ...driverOptions]}
+                  key="desktop-supervisor"
+                  value={form.supervisor ?? ""}
+                  onChange={(val) => setForm((f) => ({ ...f, supervisor: val }))}
+                  options={[{ value: "", label: "Pilih pengawas..." }, ...supervisorOptions]}
                   style={inputStyle}
                 />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                <label style={labelStyle}>Nama Pengemudi <span style={{ color: "#DA0037" }}>*</span></label>
+                <SelectDropdown
+                  key="desktop-driver"
+                  value={form.driver ?? ""}
+                  onChange={(val) => setForm((f) => ({ ...f, driver: val }))}
+                  options={[{ value: "", label: "Pilih pengemudi..." }, ...filteredDriverOptions]}
+                  style={inputStyle}
+                  disabled={!form.vehicleId}
+                />
+                {!form.vehicleId && (
+                  <p style={{ fontSize: 11, color: "#9CA3AF", margin: 0 }}>Pilih kendaraan terlebih dahulu</p>
+                )}
               </div>
             </div>
 
@@ -558,14 +640,14 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
                 onClick={() => onOpenChange(false)}
                 style={{ height: 40, borderRadius: 8, background: "none", border: "none", color: "#DA0037", fontWeight: 500, fontSize: 14, padding: "0 20px", fontFamily: "inherit", cursor: "pointer" }}
               >
-                Cancel
+                Batal
               </button>
               <button
                 type="submit"
-                disabled={saving}
-                style={{ height: 40, borderRadius: 8, background: "#DA0037", border: "none", color: "#fff", fontWeight: 500, fontSize: 14, padding: "0 20px", fontFamily: "inherit", boxShadow: "0 1px 2px rgba(0,0,0,0.05)", cursor: "pointer", opacity: saving ? 0.7 : 1 }}
+                disabled={saving || !canSubmit}
+                style={{ height: 40, borderRadius: 8, background: "#DA0037", border: "none", color: "#fff", fontWeight: 500, fontSize: 14, padding: "0 20px", fontFamily: "inherit", boxShadow: "0 1px 2px rgba(0,0,0,0.05)", cursor: saving || !canSubmit ? "not-allowed" : "pointer", opacity: saving || !canSubmit ? 0.5 : 1 }}
               >
-                {saving ? "Saving..." : mode === "add" ? "Create Log" : "Save Changes"}
+                {saving ? "Menyimpan..." : mode === "add" ? "Buat Log" : "Simpan Perubahan"}
               </button>
             </div>
           </form>

@@ -22,7 +22,6 @@ export interface Vehicle {
 export interface Employee {
   id: string;
   name: string;
-  email?: string;
   jobTitle: string;
   phone: string;
   status: EmployeeStatus;
@@ -39,7 +38,6 @@ export interface NotificationTemplate {
   phoneCount: number;
   lastSent: string;
   category: string;
-  recipientIds?: string[];
 }
 
 export interface ActivityLog {
@@ -49,6 +47,7 @@ export interface ActivityLog {
   vehicleName: string;
   unitId: string;
   serviceType: string;
+  supervisor?: string;
   driver: string;
   status: ActivityStatus;
   createdBy: string;
@@ -64,6 +63,8 @@ export interface VehicleFilter {
 export interface ActivityFilter {
   serviceType?: string;
   vehicleId?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export interface DashboardFilter {

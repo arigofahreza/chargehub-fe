@@ -1,10 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getVehicleById } from "@/lib/services/vehicles";
-import { getActivityLogs } from "@/lib/services/activity";
+import { cookies } from "next/headers";
 import { formatDateTime } from "@/lib/utils";
 import { EditVehicleButton } from "@/components/vehicles/EditVehicleButton";
+import type { Vehicle, ActivityLog } from "@/lib/types";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+async function serverFetch<T>(path: string, token: string | undefined): Promise<T | null> {
+  const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+  const res = await fetch(`${API_BASE}${path}`, { headers, cache: "no-store" });
+  if (!res.ok) return null;
+  return res.json() as Promise<T>;
+}
 
 const statusConfig = {
   idle: { label: "Idle", bg: "rgba(0,113,77,0.1)", text: "#00714D" },
@@ -30,10 +39,16 @@ function InfoRow({ label, value }: { label: string; value: string | number }) {
 
 export default async function VehicleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [vehicle, allLogs] = await Promise.all([getVehicleById(id), getActivityLogs()]);
+  const cookieStore = await cookies();
+  const token = cookieStore.get("auth_token")?.value;
+
+  const [vehicle, allLogs] = await Promise.all([
+    serverFetch<Vehicle>(`/api/v1/vehicles/${id}`, token),
+    serverFetch<ActivityLog[]>(`/api/v1/activities`, token),
+  ]);
   if (!vehicle) notFound();
 
-  const vehicleLogs = allLogs.filter((l) => l.vehicleId === vehicle.id).slice(0, 5);
+  const vehicleLogs = (allLogs ?? []).filter((l) => l.vehicleId === vehicle.id).slice(0, 5);
   const cfg = statusConfig[vehicle.status];
 
   return (
@@ -56,7 +71,7 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
           {/* Photo + status */}
           <div className="col-span-1 bg-white overflow-hidden" style={{ borderRadius: "var(--radius-card-lg)", boxShadow: "var(--shadow-card)" }}>
             <div className="relative h-52">
-              <Image src={vehicle.photoUrl} alt={vehicle.name} fill className="object-cover" />
+              <Image src={vehicle.photoUrl || "/assets/vehicle-hero.jpg"} alt={vehicle.name} fill className="object-cover" />
               <span
                 className="absolute top-3 left-3 text-xs font-bold px-3 py-1"
                 style={{ backgroundColor: cfg.bg, color: cfg.text, borderRadius: "9999px" }}
