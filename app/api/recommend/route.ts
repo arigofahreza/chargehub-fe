@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const ML_API_URL = process.env.ML_API_URL ?? "http://localhost:8001";
+const ML_API_KEY = process.env.ML_API_KEY ?? "";
 
 const ML_ACTIVITIES = [
   { slug: "heavy_stacking", label: "Heavy Stacking" },
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     ML_ACTIVITIES.map(({ slug, label }) =>
       fetch(`${ML_API_URL}/predict`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(ML_API_KEY && { "X-API-Key": ML_API_KEY }) },
         body: JSON.stringify({ truck_id, activity: slug, duration_minutes, battery_before_pct, shift }),
       })
         .then((r) => r.json())

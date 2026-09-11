@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useImageUpload } from "@/components/hooks/use-image-upload";
-import { ImagePlus, Pencil, X, Check, AtSign, Mail, Shield, User, Camera } from "lucide-react";
+import { ImagePlus, Pencil, X, Check, AtSign, Shield, User, Camera } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -76,7 +76,6 @@ function EditProfileDialog({
   const user = useAuthStore((s) => s.user);
   const [firstName, setFirstName] = useState(user?.firstName ?? "");
   const [lastName, setLastName] = useState(user?.lastName ?? "");
-  const [email, setEmail] = useState(user?.email ?? "");
   const [saving, setSaving] = useState(false);
   const [saveErr, setSaveErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -96,7 +95,6 @@ function EditProfileDialog({
         body: JSON.stringify({
           firstName: firstName.trim(),
           lastName: lastName.trim(),
-          email: email.trim() || null,
         }),
       });
       if (!res.ok) {
@@ -113,7 +111,6 @@ function EditProfileDialog({
               firstName: newFirstName,
               lastName: newLastName,
               fullName: `${newFirstName} ${newLastName}`.trim(),
-              email: (updated.email as string) ?? email.trim(),
             }
           : s.user,
       }));
@@ -216,19 +213,6 @@ function EditProfileDialog({
               </div>
             </div>
             <p className="text-xs" style={{ color: "var(--color-muted-text)" }}>Username tidak dapat diubah.</p>
-          </div>
-
-          {/* Email */}
-          <div className="space-y-1.5">
-            <Label htmlFor="ep-email">Email</Label>
-            <Input
-              id="ep-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="email@perusahaan.id"
-              disabled={saving}
-            />
           </div>
 
           {saveErr && (
@@ -339,7 +323,6 @@ export default function ProfilePage() {
             <InfoRow icon={User} label="Nama Depan" value={user.firstName} />
             <InfoRow icon={User} label="Nama Belakang" value={user.lastName || "—"} />
             <InfoRow icon={AtSign} label="Username" value={user.username} />
-            <InfoRow icon={Mail} label="Email" value={user.email || "Belum diatur"} />
             <InfoRow icon={Shield} label="Role" value={user.role === "admin" ? "Admin" : "Operator"} />
           </div>
         </div>

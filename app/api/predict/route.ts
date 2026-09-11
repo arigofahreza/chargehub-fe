@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const ML_API_URL = process.env.ML_API_URL ?? "http://localhost:8001";
+const ML_API_KEY = process.env.ML_API_KEY ?? "";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -8,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     const upstream = await fetch(`${ML_API_URL}/predict`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(ML_API_KEY && { "X-API-Key": ML_API_KEY }) },
       body: JSON.stringify(body),
     });
 

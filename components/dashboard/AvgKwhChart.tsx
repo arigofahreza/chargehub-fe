@@ -121,7 +121,7 @@ export function AvgKwhChart({ data }: Props) {
               <LabelList
                 dataKey="avgKwh"
                 position="top"
-                formatter={(v: number) => `${v}`}
+                formatter={(v: unknown) => `${v as number}`}
                 style={{ fontSize: 10, fill: "#555", fontWeight: 600 }}
               />
             </Bar>

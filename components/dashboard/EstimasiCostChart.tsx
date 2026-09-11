@@ -130,7 +130,7 @@ export function EstimasiCostChart({ data }: Props) {
               <LabelList
                 dataKey="estimatedCost"
                 position="top"
-                formatter={(v: number) => formatYAxis(v)}
+                formatter={(v: unknown) => formatYAxis(v as number)}
                 style={{ fontSize: 10, fill: "#555", fontWeight: 600 }}
               />
             </Bar>
