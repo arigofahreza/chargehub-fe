@@ -47,12 +47,13 @@ export interface ActivityLog {
   vehicleName: string;
   unitId: string;
   serviceType: string;
-  supervisor?: string;
+  supervisors: string[];
   driver: string;
   status: ActivityStatus;
   createdBy: string;
   durationMinutes?: number;
   energyKwh?: number;
+  costRupiah?: number;
 }
 
 export interface VehicleFilter {

@@ -68,7 +68,7 @@ export function ActivityTable({ logs, onEdit, onDelete, canWrite }: Props) {
                     {log.serviceType}
                   </td>
                   <td className="px-4 py-3" style={{ color: "var(--color-body)" }}>
-                    {log.supervisor ?? "-"}
+                    {(log.supervisors ?? []).join(", ") || "-"}
                   </td>
                   <td className="px-4 py-3" style={{ color: "var(--color-body)" }}>
                     {log.driver}

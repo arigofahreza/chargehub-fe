@@ -9,8 +9,11 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "AMEV — Fleet Management",
-  description: "AMEV Fleet Management Platform",
+  title: "AMEV — Monitoring EV",
+  description: "AMEV Monitoring EV Platform",
+  icons: {
+    icon: "/assets/amm.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -9,6 +9,7 @@ import { sheetVariants, sheetOverlayVariants } from "@/lib/motion";
 import { X } from "lucide-react";
 import { predictBattery } from "@/lib/services/prediction";
 import { ServiceTypePicker } from "@/components/ui/service-type-picker";
+import { MultiSelectDropdown } from "@/components/ui/multi-select-dropdown";
 import { getAvgDuration } from "@/lib/services/activity";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -97,6 +98,7 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
       vehicleName: "",
       unitId: "",
       serviceType: "Charging",
+      supervisors: [],
       driver: "",
       status: "pending",
       createdBy: "Admin",
@@ -130,7 +132,7 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
           vehicleName: "",
           unitId: "",
           serviceType: "Charging",
-          supervisor: "",
+          supervisors: [],
           driver: "",
           status: "pending",
           createdBy: "Admin",
@@ -272,7 +274,7 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
 
   const title = mode === "add" ? "Buat Log" : "Edit Log";
 
-  const canSubmit = !!form.vehicleId && !!form.supervisor && !!form.driver;
+  const canSubmit = !!form.vehicleId && (form.supervisors?.length ?? 0) > 0 && !!form.driver;
 
   const selectedVehicle = vehicleOptions.find((v) => v.id === form.vehicleId);
   const vehicleAllowedServices = getAllowedServices(selectedVehicle?.vehicleType);
@@ -459,12 +461,11 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
       {serviceChips}
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         <label style={labelStyle}>Pengawas <span style={{ color: "#DA0037" }}>*</span></label>
-        <SelectDropdown
-          key="mobile-supervisor"
-          value={form.supervisor ?? ""}
-          onChange={(val) => setForm((f) => ({ ...f, supervisor: val }))}
-          options={[{ value: "", label: "Pilih pengawas..." }, ...supervisorOptions]}
-          style={inputStyle}
+        <MultiSelectDropdown
+          values={form.supervisors ?? []}
+          onChange={(vals) => setForm((f) => ({ ...f, supervisors: vals }))}
+          options={supervisorOptions}
+          placeholder="Pilih pengawas..."
         />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -606,12 +607,11 @@ export function ActivityFormModal({ open, onOpenChange, initial, onSubmit, mode,
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 <label style={labelStyle}>Pengawas <span style={{ color: "#DA0037" }}>*</span></label>
-                <SelectDropdown
-                  key="desktop-supervisor"
-                  value={form.supervisor ?? ""}
-                  onChange={(val) => setForm((f) => ({ ...f, supervisor: val }))}
-                  options={[{ value: "", label: "Pilih pengawas..." }, ...supervisorOptions]}
-                  style={inputStyle}
+                <MultiSelectDropdown
+                  values={form.supervisors ?? []}
+                  onChange={(vals) => setForm((f) => ({ ...f, supervisors: vals }))}
+                  options={supervisorOptions}
+                  placeholder="Pilih pengawas..."
                 />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>

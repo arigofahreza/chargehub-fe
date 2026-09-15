@@ -169,3 +169,16 @@ export async function getEmployeeTokens(): Promise<EmployeeTokenInfo[]> {
 export async function refreshEmployeeToken(employeeId: string): Promise<EmployeeTokenInfo> {
   return api.post<EmployeeTokenInfo>(`/api/v1/employees/${employeeId}/refresh-token`, {});
 }
+
+export async function getTariffKwh(): Promise<number> {
+  try {
+    const cfg = await api.get<{ key: string; value: string }>("/api/v1/config/tariff_kwh_rupiah");
+    return parseFloat(cfg.value) || 1114;
+  } catch {
+    return 1114;
+  }
+}
+
+export async function updateTariffKwh(value: number): Promise<void> {
+  await api.put("/api/v1/config/tariff_kwh_rupiah", { value: String(value) });
+}

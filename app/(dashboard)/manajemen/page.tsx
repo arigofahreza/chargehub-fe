@@ -12,6 +12,7 @@ import { CategoryList } from "@/components/management/CategoryList";
 import { ActivityCategoryList } from "@/components/management/ActivityCategoryList";
 import { BatteryDrainRateList } from "@/components/management/BatteryDrainRateList";
 import { TelegramTokenTable } from "@/components/management/TelegramTokenTable";
+import { TarifPanel } from "@/components/management/TarifPanel";
 import { Wave } from "@/components/ui/wave";
 import {
   getUsers, patchUserRole, deleteUser,
@@ -20,10 +21,11 @@ import {
   getActivityCategories, createActivityCategory, updateActivityCategory, deleteActivityCategory,
   getBatteryDrainRates, createBatteryDrainRate, updateBatteryDrainRate, deleteBatteryDrainRate,
   getEmployeeTokens, refreshEmployeeToken,
+  getTariffKwh, updateTariffKwh,
   type AdminUser, type Category, type EmployeeCategory, type ActivityCategory, type BatteryDrainRate, type EmployeeTokenInfo,
 } from "@/lib/services/management";
 
-type Tab = "pengguna" | "kendaraan" | "karyawan" | "aktivitas" | "baterai" | "telegram";
+type Tab = "pengguna" | "kendaraan" | "karyawan" | "aktivitas" | "baterai" | "telegram" | "tarif";
 
 const sectionStyle: React.CSSProperties = {
   background: "#fff",
@@ -44,6 +46,7 @@ export default function ManajemenPage() {
   const [activityCats, setActivityCats] = useState<ActivityCategory[]>([]);
   const [batteryRates, setBatteryRates] = useState<BatteryDrainRate[]>([]);
   const [employeeTokens, setEmployeeTokens] = useState<EmployeeTokenInfo[]>([]);
+  const [tariffKwh, setTariffKwh] = useState<number>(1114);
   const [loading, setLoading] = useState(true);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [reloadingTokens, setReloadingTokens] = useState(false);
@@ -55,14 +58,15 @@ export default function ManajemenPage() {
   useEffect(() => {
     if (!perms.canAccessManagement) return;
     setLoading(true);
-    Promise.all([getUsers(), getVehicleCategories(), getEmployeeCategories(), getActivityCategories(), getBatteryDrainRates(), getEmployeeTokens()])
-      .then(([u, vc, ec, ac, br, et]) => {
+    Promise.all([getUsers(), getVehicleCategories(), getEmployeeCategories(), getActivityCategories(), getBatteryDrainRates(), getEmployeeTokens(), getTariffKwh()])
+      .then(([u, vc, ec, ac, br, et, tariff]) => {
         setUsers(u);
         setVehicleCats(vc);
         setEmployeeCats(ec);
         setActivityCats(ac);
         setBatteryRates(br);
         setEmployeeTokens(et);
+        setTariffKwh(tariff);
       })
       .finally(() => setLoading(false));
   }, [perms.canAccessManagement]);
@@ -200,6 +204,7 @@ export default function ManajemenPage() {
           <button style={tabStyle(tab === "aktivitas")} onClick={() => setTab("aktivitas")}>Kategori Aktivitas</button>
           <button style={tabStyle(tab === "baterai")} onClick={() => setTab("baterai")}>Penurunan Baterai</button>
           <button style={tabStyle(tab === "telegram")} onClick={() => setTab("telegram")}>Token Telegram</button>
+          <button style={tabStyle(tab === "tarif")} onClick={() => setTab("tarif")}>Tarif Listrik</button>
         </div>
 
         {loading ? (
@@ -300,6 +305,19 @@ export default function ManajemenPage() {
                 <TelegramTokenTable
                   employees={employeeTokens}
                   onRefreshToken={handleRefreshEmployeeToken}
+                />
+              </div>
+            )}
+            {tab === "tarif" && (
+              <div style={sectionStyle}>
+                <h2 style={{ fontWeight: 700, fontSize: 15, color: "#171717", marginBottom: 4 }}>Tarif Listrik per kWh</h2>
+                <TarifPanel
+                  tariff={tariffKwh}
+                  onUpdate={async (val) => {
+                    await updateTariffKwh(val);
+                    setTariffKwh(val);
+                  }}
+                  canWrite={perms.canAccessManagement}
                 />
               </div>
             )}
