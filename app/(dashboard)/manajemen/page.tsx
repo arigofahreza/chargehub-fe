@@ -22,7 +22,7 @@ import {
   getBatteryDrainRates, createBatteryDrainRate, updateBatteryDrainRate, deleteBatteryDrainRate,
   getEmployeeTokens, refreshEmployeeToken,
   getTariffKwh, updateTariffKwh,
-  type AdminUser, type Category, type EmployeeCategory, type ActivityCategory, type BatteryDrainRate, type EmployeeTokenInfo,
+  type AdminUser, type Category, type EmployeeCategory, type ActivityCategory, type BatteryDrainRate, type EmployeeTokenInfo, type BatteryCategory,
 } from "@/lib/services/management";
 
 type Tab = "pengguna" | "kendaraan" | "karyawan" | "aktivitas" | "baterai" | "telegram" | "tarif";
@@ -131,13 +131,13 @@ export default function ManajemenPage() {
     }
   }, []);
 
-  async function handleAddBatteryRate(activityId: string, persenPenurunan: number) {
-    const created = await createBatteryDrainRate(activityId, persenPenurunan);
+  async function handleAddBatteryRate(activityId: string, persenPenurunan: number, category: BatteryCategory) {
+    const created = await createBatteryDrainRate(activityId, persenPenurunan, category);
     setBatteryRates((prev) => [...prev, created]);
   }
 
-  async function handleEditBatteryRate(id: string, persenPenurunan: number) {
-    const updated = await updateBatteryDrainRate(id, persenPenurunan);
+  async function handleEditBatteryRate(id: string, persenPenurunan: number, category: BatteryCategory) {
+    const updated = await updateBatteryDrainRate(id, persenPenurunan, category);
     setBatteryRates((prev) => prev.map((r) => (r.id === id ? updated : r)));
   }
 
@@ -146,7 +146,7 @@ export default function ManajemenPage() {
     if (ok) setBatteryRates((prev) => prev.filter((r) => r.id !== id));
   }
 
-  async function handleAddActivityCat(name: string, iconFile: File) {
+  async function handleAddActivityCat(name: string, iconFile?: File | null) {
     const created = await createActivityCategory(name, iconFile);
     setActivityCats((prev) => [...prev, created]);
   }
@@ -202,7 +202,7 @@ export default function ManajemenPage() {
           <button style={tabStyle(tab === "kendaraan")} onClick={() => setTab("kendaraan")}>Kategori Kendaraan</button>
           <button style={tabStyle(tab === "karyawan")} onClick={() => setTab("karyawan")}>Kategori Karyawan</button>
           <button style={tabStyle(tab === "aktivitas")} onClick={() => setTab("aktivitas")}>Kategori Aktivitas</button>
-          <button style={tabStyle(tab === "baterai")} onClick={() => setTab("baterai")}>Penurunan Baterai</button>
+          <button style={tabStyle(tab === "baterai")} onClick={() => setTab("baterai")}>Pengaturan Baterai</button>
           <button style={tabStyle(tab === "telegram")} onClick={() => setTab("telegram")}>Token Telegram</button>
           <button style={tabStyle(tab === "tarif")} onClick={() => setTab("tarif")}>Tarif Listrik</button>
         </div>
@@ -266,8 +266,8 @@ export default function ManajemenPage() {
             )}
             {tab === "baterai" && (
               <div style={sectionStyle}>
-                <h2 style={{ fontWeight: 700, fontSize: 15, color: "#171717", marginBottom: 4 }}>Penurunan Baterai per Aktivitas</h2>
-                <p style={{ fontSize: 12, color: "#888", marginBottom: 16 }}>Konfigurasi persentase penurunan baterai untuk setiap jenis aktivitas.</p>
+                <h2 style={{ fontWeight: 700, fontSize: 15, color: "#171717", marginBottom: 4 }}>Pengaturan Baterai per Aktivitas</h2>
+                <p style={{ fontSize: 12, color: "#888", marginBottom: 16 }}>Konfigurasi persentase perubahan baterai dan kategori (kenaikan/penurunan) untuk setiap jenis aktivitas.</p>
                 <BatteryDrainRateList
                   rates={batteryRates}
                   activityCategories={activityCats}

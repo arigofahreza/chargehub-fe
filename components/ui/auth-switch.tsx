@@ -95,7 +95,7 @@ export default function AuthSwitch() {
       {/* Left panel: image */}
       <div
         className="hidden lg:flex flex-col items-center justify-center flex-1 relative overflow-hidden"
-        style={{ background: "#EBEBEB" }}
+        style={{ background: "#E9E9E9" }}
       >
         <div className="relative w-[100%] h-[100%]">
           <Image src="/assets/login-hero.jpg" alt="Fleet" fill priority className="object-contain" />

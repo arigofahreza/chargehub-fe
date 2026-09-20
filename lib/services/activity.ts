@@ -64,3 +64,21 @@ export async function getAvgDuration(
     return null;
   }
 }
+
+export interface VehicleBatteryState {
+  batteryPct: number;
+  calculatedAt: string | null;
+  sourceActivityId: string | null;
+}
+
+export async function getBatteryState(vehicleId: string): Promise<VehicleBatteryState> {
+  try {
+    return await api.get<VehicleBatteryState>(`/api/v1/vehicles/${vehicleId}/battery-state`);
+  } catch {
+    return { batteryPct: 100.0, calculatedAt: null, sourceActivityId: null };
+  }
+}
+
+export async function calibrateBatteryState(vehicleId: string, batteryPct: number): Promise<VehicleBatteryState> {
+  return api.patch<VehicleBatteryState>(`/api/v1/vehicles/${vehicleId}/battery-state`, { batteryPct });
+}

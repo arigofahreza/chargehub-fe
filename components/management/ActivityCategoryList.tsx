@@ -6,7 +6,7 @@ import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
 
 interface Props {
   categories: ActivityCategory[];
-  onAdd: (name: string, iconFile: File) => Promise<void>;
+  onAdd: (name: string, iconFile?: File | null) => Promise<void>;
   onEdit: (id: string, name: string, iconFile?: File) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   canWrite?: boolean;
@@ -92,11 +92,11 @@ export function ActivityCategoryList({ categories, onAdd, onEdit, onDelete, canW
 
   async function handleAdd() {
     const trimmed = name.trim();
-    if (!trimmed || !iconFile) return;
+    if (!trimmed) return;
     setAdding(true);
     setError(null);
     try {
-      await onAdd(trimmed, iconFile);
+      await onAdd(trimmed, iconFile ?? null);
       setName("");
       clearIcon();
     } catch (err) {
@@ -115,7 +115,7 @@ export function ActivityCategoryList({ categories, onAdd, onEdit, onDelete, canW
     }
   }
 
-  const canSubmit = !!name.trim() && !!iconFile && !adding;
+  const canSubmit = !!name.trim() && !adding;
 
   const iconBtn: React.CSSProperties = {
     border: "none", background: "none", padding: 6, borderRadius: 6,
@@ -283,7 +283,7 @@ export function ActivityCategoryList({ categories, onAdd, onEdit, onDelete, canW
                 }}
               >
                 <Upload size={13} />
-                Pilih Icon <span style={{ color: "#DA0037" }}>*</span>
+                Pilih Icon (opsional)
               </button>
             )}
             <input ref={fileRef} type="file" accept={ACCEPTED} style={{ display: "none" }} onChange={handleFileChange} />

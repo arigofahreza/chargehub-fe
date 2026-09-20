@@ -102,10 +102,10 @@ export async function getActivityCategories(): Promise<ActivityCategory[]> {
   return api.get<ActivityCategory[]>("/api/v1/categories/activity");
 }
 
-export async function createActivityCategory(name: string, iconFile: File): Promise<ActivityCategory> {
+export async function createActivityCategory(name: string, iconFile?: File | null): Promise<ActivityCategory> {
   const formData = new FormData();
   formData.append("name", name);
-  formData.append("icon", iconFile);
+  if (iconFile) formData.append("icon", iconFile);
   return api.postForm<ActivityCategory>("/api/v1/categories/activity", formData);
 }
 
@@ -125,23 +125,26 @@ export async function deleteActivityCategory(id: string): Promise<boolean> {
   }
 }
 
+export type BatteryCategory = "kenaikan" | "penurunan";
+
 export interface BatteryDrainRate {
   id: string;
   activityId: string;
   activityName: string;
   persenPenurunan: number;
+  category: BatteryCategory;
 }
 
 export async function getBatteryDrainRates(): Promise<BatteryDrainRate[]> {
   return api.get<BatteryDrainRate[]>("/api/v1/categories/battery-drain-rates");
 }
 
-export async function createBatteryDrainRate(activityId: string, persenPenurunan: number): Promise<BatteryDrainRate> {
-  return api.post<BatteryDrainRate>("/api/v1/categories/battery-drain-rates", { activityId, persenPenurunan });
+export async function createBatteryDrainRate(activityId: string, persenPenurunan: number, category: BatteryCategory): Promise<BatteryDrainRate> {
+  return api.post<BatteryDrainRate>("/api/v1/categories/battery-drain-rates", { activityId, persenPenurunan, category });
 }
 
-export async function updateBatteryDrainRate(id: string, persenPenurunan: number): Promise<BatteryDrainRate> {
-  return api.patch<BatteryDrainRate>(`/api/v1/categories/battery-drain-rates/${id}`, { persenPenurunan });
+export async function updateBatteryDrainRate(id: string, persenPenurunan: number, category: BatteryCategory): Promise<BatteryDrainRate> {
+  return api.patch<BatteryDrainRate>(`/api/v1/categories/battery-drain-rates/${id}`, { persenPenurunan, category });
 }
 
 export async function deleteBatteryDrainRate(id: string): Promise<boolean> {

@@ -59,8 +59,10 @@ export default function ActivityPage() {
       const updated = await updateLog(editing.id, data);
       if (updated) setLogs((prev) => prev.map((l) => (l.id === editing.id ? updated : l)));
     } else {
-      const created = await addLog(data as Omit<ActivityLog, "id">);
-      setLogs((prev) => [created, ...prev]);
+      await addLog(data as Omit<ActivityLog, "id">);
+      // Reload full list — BE may have auto-completed a previous activity
+      const refreshed = await getActivityLogs(activityFilter);
+      setLogs(refreshed);
     }
   }
 
