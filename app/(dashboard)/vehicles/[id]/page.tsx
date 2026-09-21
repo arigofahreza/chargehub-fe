@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { formatDateTime } from "@/lib/utils";
 import { EditVehicleButton } from "@/components/vehicles/EditVehicleButton";
+import { BatteryCalibrationWidget } from "@/components/vehicles/BatteryCalibrationWidget";
 import type { Vehicle, ActivityLog } from "@/lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -42,14 +43,17 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
   const cookieStore = await cookies();
   const token = cookieStore.get("auth_token")?.value;
 
-  const [vehicle, allLogs] = await Promise.all([
+  const [vehicle, allLogs, batteryState] = await Promise.all([
     serverFetch<Vehicle>(`/api/v1/vehicles/${id}`, token),
     serverFetch<ActivityLog[]>(`/api/v1/activities`, token),
+    serverFetch<{ batteryPct: number; calculatedAt: string | null }>(`/api/v1/vehicles/${id}/battery-state`, token),
   ]);
   if (!vehicle) notFound();
 
   const vehicleLogs = (allLogs ?? []).filter((l) => l.vehicleId === vehicle.id).slice(0, 5);
   const cfg = statusConfig[vehicle.status];
+  const batteryPct = batteryState?.batteryPct ?? 100;
+  const batteryCalculatedAt = batteryState?.calculatedAt ?? null;
 
   return (
     <>
@@ -67,7 +71,7 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
         </div>
 
         {/* Hero row */}
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Photo + status */}
           <div className="col-span-1 bg-white overflow-hidden" style={{ borderRadius: "var(--radius-card-lg)", boxShadow: "var(--shadow-card)" }}>
             <div className="relative h-52">
@@ -94,13 +98,18 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
           </div>
 
           {/* Detail kendaraan di sisi kanan hero */}
-          <div className="col-span-2 bg-white p-5" style={{ borderRadius: "var(--radius-card-lg)", boxShadow: "var(--shadow-card)" }}>
+          <div className="col-span-1 md:col-span-2 bg-white p-5" style={{ borderRadius: "var(--radius-card-lg)", boxShadow: "var(--shadow-card)" }}>
             <h3 className="text-sm font-bold mb-3" style={{ color: "var(--color-ink)" }}>Detail Kendaraan</h3>
             <InfoRow label="Merek" value={vehicle.make} />
             <InfoRow label="Model" value={vehicle.model} />
             <InfoRow label="Nomer Unit" value={vehicle.vin} />
             <InfoRow label="Fleet ID" value={vehicle.fleetId} />
             <InfoRow label="Waktu Beroperasi" value={`${vehicle.operatingTime ?? 0} jam`} />
+            <BatteryCalibrationWidget
+              vehicleId={vehicle.id}
+              initialBatteryPct={batteryPct}
+              initialCalculatedAt={batteryCalculatedAt}
+            />
           </div>
         </div>
 

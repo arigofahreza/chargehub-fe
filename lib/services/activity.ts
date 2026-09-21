@@ -80,5 +80,5 @@ export async function getBatteryState(vehicleId: string): Promise<VehicleBattery
 }
 
 export async function calibrateBatteryState(vehicleId: string, batteryPct: number): Promise<VehicleBatteryState> {
-  return api.patch<VehicleBatteryState>(`/api/v1/vehicles/${vehicleId}/battery-state`, { batteryPct });
+  return api.patch<VehicleBatteryState>(`/api/v1/vehicles/${vehicleId}/battery-state`, { battery_pct: batteryPct });
 }

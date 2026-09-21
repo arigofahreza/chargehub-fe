@@ -150,6 +150,7 @@ export function BottomTabBar() {
                 boxShadow: "0 12px 40px rgba(11,28,48,0.18)",
                 padding: "10px 8px",
                 zIndex: 50,
+                pointerEvents: "auto",
               }}
             >
               {/* User info */}
